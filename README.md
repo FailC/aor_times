@@ -11,7 +11,7 @@ Script for Art of Rally to check how many stages you completed and outputs the t
 
 - Windows: `C:\Users\YOUR_USERNAME\AppData\LocalLow\Funselektor Labs\art of rally\cloud\Leaderboards.txt`
 
-**Example output:**
+**Example output: (open file to get the right formating)**
 
 Total time:
 170824.52 sec
