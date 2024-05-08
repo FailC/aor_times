@@ -1,6 +1,8 @@
 # aor_times
-Script for art of rally Leaderboards.txt file 
+Script for art of rally to check how many stages you completed 
 outputs the total time of all the groups 
+
+
 
 File location (i think):
 Linux 
@@ -11,6 +13,8 @@ find ~/ -name "Leaderboards.txt"
 
 Windows 
 C:\Users\YOUR_USERNAME\AppData\LocalLow\Funselektor Labs\art of rally\cloud\Leaderboards.txt 
+
+
 
 example output:
 
