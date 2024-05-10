@@ -1,6 +1,9 @@
 # The file "Leaderboards.txt" must be located in the same directory in which the script is executed.
 #
 # daily/weekly events are excluded
+#
+# made by FailX and MxCraven 
+#
 
 def convert(milliseconds):
     seconds = milliseconds / 1000 
