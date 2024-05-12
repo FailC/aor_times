@@ -61,7 +61,7 @@ def get_settings():
     elif isBonus == "only" or isBonus == "o":
         #print("only")
         group_strings = ["Logging","Vans","Dakar","Monkey"]
-        group_total = 0
+        group_total = 4
     else:
         #print("all")
         group_strings = ["60s","70s","80s","GroupB","GroupS","GroupA","Logging","Vans","Dakar","Monkey"]
