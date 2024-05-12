@@ -13,12 +13,21 @@ def convert(milliseconds):
 
 def convert_hour_min(milliseconds):
     # converts to hour:min format
-    seconds = milliseconds / 1000
-    hours = seconds / 3600
-    h = int(hours)
-    m = hours - h
-    m = m * 60
-    return h,m
+     ms=int(milliseconds)%1000
+     s=int(milliseconds/1000)%60
+     m=int(milliseconds/(1000*60))%60
+     h=int(milliseconds/(1000*60*60))%24
+     return ms,s,m,h
+ 
+def convert_total_time(milliseconds):
+    # converts to hour:min format
+     ms=int(milliseconds)%1000
+     s=int(milliseconds/1000)%60
+     m=int(milliseconds/(1000*60))%60
+     h=int(milliseconds/(1000*60*60))%24
+     d=int(milliseconds/(1000*60*60*24))
+     return ms,s,m,h,d
+
 
 # init hashmap
 group_total_time = 0
@@ -63,36 +72,40 @@ except FileNotFoundError:
     print("Leaderboards.txt needs to be in same directory as this script")
     exit()
 
-seconds, minutes, hours, days = convert(group_total_time)
-print("total time:")
-#print(f"{milliseconds} ms")
-print(f"{seconds:.2f} sec")
-print(f"{minutes:.2f} min")
-print(f"{hours:.2f} h")
-print(f"{days:.2f} days\n")
 
 #Group times
-print("Times:")
+print("Times Groups:")
 for group, count in group_counts.items():
-    hours, minutes = convert_hour_min(count)
-    print(f"{group:<8}\t {hours:.0f}:{minutes:.0f}")
+    milliseconds,seconds,minutes,hours = convert_hour_min(count)
+    print(f"{group:<8}\t {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
 print()
 
+print("Times Countries:")
 for country, count in country_counts.items():
-    hours, minutes = convert_hour_min(count)
-    print(f"{country:<8}\t {hours:.0f}:{minutes:.0f}")
+    milliseconds,seconds,minutes,hours = convert_hour_min(count)
+    print(f"{country:<8}\t {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
 print()
 
 #Total stages
-print("Stages:")
+print("Stages Groups:")
 counter = 0
 for group, count in group_stages.items():
     counter += count
     print(f"{group:<8}\t {count}")
 print()
 
+print("Stages Countries:")
 for country, count in country_stages.items():
     print(f"{country:<8}\t {count}")
 print()
 
-print(f"total stages {counter}")
+seconds, minutes, hours, days = convert(group_total_time)
+ms,s,m,h,d = convert_total_time(group_total_time)
+print("total time:")
+print(f"{d}:{h:02d}:{m:02d}:{s:02d}.{ms:03d}")
+print(f"{group_total_time} ms")
+print(f"{seconds:.2f} sec")
+print(f"{minutes:.2f} min")
+print(f"{hours:.2f} h")
+print(f"{days:.2f} days\n")
+print(f"total stages: {counter}")
