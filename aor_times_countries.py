@@ -21,6 +21,7 @@ def convert_hour_min(milliseconds):
      return ms,s,m,h,d
 
 
+output_array = []
 
 # init hashmap
 
@@ -93,7 +94,8 @@ country_stages = {string: 0 for string in country_strings}
 dnf_count = 0
 
 
-print()
+# print()
+output_array.append("")
 try:
     with open("Leaderboards.txt", "r") as file:
         for line in file:
@@ -158,41 +160,68 @@ except FileNotFoundError:
     exit()
 
 #Group times
-print("Times Groups:")
+# print("Times Groups:")
+output_array.append("Times Groups:")
 for group, count in group_counts.items():
     milliseconds,seconds,minutes,hours,d = convert_hour_min(count)
-    print(f"{group:<8}\t {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
-print()
+    #print(f"{group:<8}\t {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
+    output_array.append(f"{group:<8}\t {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
+# print()
+output_array.append("")
 
-print("Times Countries:")
+# print("Times Countries:")
+output_array.append("Times Countries:")
 for country, count in country_counts.items():
     milliseconds,seconds,minutes,hours,d = convert_hour_min(count)
-    print(f"{country:<8}\t {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
-print()
+    # print(f"{country:<8}\t {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
+    output_array.append(f"{country:<8}\t {hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
+# print()
+output_array.append("")
 
 #Total stages
-print("Stages Groups:")
+# print("Stages Groups:")
+output_array.append("Stages Groups:")
 stage_counter = 0
 for group, count in group_stages.items():
     stage_counter += count
-    print(f"{group:<8}\t {count}")
-print()
+    # print(f"{group:<8}\t {count}")
+    output_array.append(f"{group:<8}\t {count}")
+# print()
+output_array.append("")
 
-print("Stages Countries:")
+# print("Stages Countries:")
+output_array.append("Stages Countries:")
 for country, count in country_stages.items():
-    print(f"{country:<8}\t {count}")
-print()
+    # print(f"{country:<8}\t {count}")
+    output_array.append(f"{country:<8}\t {count}")
+# print()
+output_array.append("")
 
 seconds, minutes, hours, days = convert(group_total_time)
 ms,s,m,h,d = convert_hour_min(group_total_time)
-print("total time:")
-print(f"{d}:{h:02d}:{m:02d}:{s:02d}.{ms:03d}")
-print(f"{group_total_time} ms")
-print(f"{seconds:.2f} sec")
-print(f"{minutes:.2f} min")
-print(f"{hours:.2f} h")
-print(f"{days:.2f} days")
-print()
-print(f"DNFs: {dnf_count}")
+# print("total time:")
+# print(f"{d}:{h:02d}:{m:02d}:{s:02d}.{ms:03d}")
+# print(f"{group_total_time} ms")
+# print(f"{seconds:.2f} sec")
+# print(f"{minutes:.2f} min")
+# print(f"{hours:.2f} h")
+# print(f"{days:.2f} days")
+output_array.append("total time:")
+output_array.append(f"{d}:{h:02d}:{m:02d}:{s:02d}.{ms:03d}")
+output_array.append(f"{group_total_time} ms")
+output_array.append(f"{seconds:.2f} sec")
+output_array.append(f"{minutes:.2f} min")
+output_array.append(f"{hours:.2f} h")
+output_array.append(f"{days:.2f} days")
+# print()
+output_array.append("")
+# print(f"DNFs: {dnf_count}")
+output_array.append(f"DNFs: {dnf_count}")
 max_stages = country_total * group_total
-print(f"total stages: {stage_counter} / {max_stages:.0f}")
+# print(f"total stages: {stage_counter} / {max_stages:.0f}")
+output_array.append(f"total stages: {stage_counter} / {max_stages:.0f}")
+
+#Print out all lines in output_array. In future convert this to use the options
+for line in output_array:
+    print(line)
+
