@@ -2,7 +2,7 @@
 #
 # early access version
 #
-# changelog: added todo list, fixed some args descriptions, better stage not found message
+# changelog: --stage takes multiple arguments, changed -h messages
 #
 # todo:
 #
@@ -138,20 +138,25 @@ class Stage:
     def get_car_name(self) -> str:
         return Stage.car_names[self.group][self.car_number]
 
-# maybe there is a shorter way, don't need the location
+
+# don't need the location for now
 # add this to a class? who needs OOP am i right..
-all_stages = {stage: location for location, stages in Stage.location_stage_names.items() for stage in stages}
-def find_stage(stage_name: str) -> str:
-    if stage_name in all_stages:
-        return stage_name
-    else:
-        suggestions = difflib.get_close_matches(stage_name, all_stages)
-        if suggestions:
-            eprint(f"Stage '{stage_name}' not found. Did you mean: {', '.join(suggestions)}? Using {suggestions[0]}")
-            return suggestions[0]
-        else:
-            eprint(f"Stage '{stage_name}' not found")
-            exit()
+# I HECKING LOVE LIST COMPREHENSIONS
+all_stages: dict[str, str] = {stage: location for location, stages in Stage.location_stage_names.items() for stage in stages}
+def find_stage(stage_name: list[str]) -> list[str]:
+    stage_list = []
+    for name in stage_name:
+       if name in all_stages:
+           stage_list.append(name)
+       else:
+           suggestions = difflib.get_close_matches(name, all_stages)
+           if suggestions:
+               eprint(f"Stage '{name}' not found. Using {suggestions[0]}")
+               stage_list.append(suggestions[0])
+           else:
+               eprint(f"Stage '{stage_name}' not found")
+               exit()
+    return stage_list
 
 
 def main():
@@ -165,10 +170,10 @@ def main():
 
     parser = argparse.ArgumentParser(description="rally car goes vrooaaam",formatter_class=CustomFormatter)
 
-    parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], help='specify a location')
-    parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"], help='specify a group')
+    parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
+    parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
     parser.add_argument('-c', '--car', action='store_true', help='print out the used car')
-    parser.add_argument('-s', '--stage', default=None, help="search for stage name. Doesn't need the location argument. Will provide the best match")
+    parser.add_argument('-s', '--stage', nargs='+', default=None, help="search for stage name, will provide the best match")
     parser.add_argument( '-d','--direction', choices=["forward", "reverse"], default=["forward", "reverse"])
     parser.add_argument( '-w','--weather', choices=["dry", "wet"], default=["dry", "wet"])
     parser.add_argument('-t', '--total_time', action='store_true', help='print total time of all selected stages')
@@ -189,15 +194,14 @@ def main():
         print(f"-----------  ")
 
     total_time = 0
-    # getting stage name, returns the closest match
+    # if -s is provided, search for stage names
     if args.stage:
         args.stage = find_stage(args.stage)
 
-    #todo getting BrokenPipeError lol
     for stage in Stage.stage_vec:
         if stage.location in args.location and stage.group in args.group and stage.direction in args.direction and stage.weather in args.weather and (not args.stage or stage.stage in args.stage):
             if not args.only_time:
-                # kinda shit but oh well
+                # change to fstring buffer
                 if args.car:
                     print(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.car_name:<20} {stage.direction:<10} {stage.weather:<10}", end='')
                 else:
@@ -207,9 +211,7 @@ def main():
 
     if args.total_time:
         new = Time(total_time)
-        #print("total time:  ", end='')
         new.print_time(hours=True)
-
 
 
 if __name__ == "__main__":
