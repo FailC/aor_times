@@ -2,24 +2,21 @@
 #
 # early access version
 #
-# changelog: support for custom filename, formating long if statements
+# CHANGELOG: better error with wrong filename, --argprint uses the right stage name now
 #
-# todo:
-#
+# TODO:
 # add bonus group car names
 # exclude groups or locations?
 # add daily weekly filter
-# add path option for changed name for leaderboards.txt file
 #
-# --argprint needs to exclude some options like --headline or --car. Doesn't make sense
-# --argprint, fix wrong stage names, if typed wrong from the user, should take the provided name from difflib
-#
+# --argprint needs to exclude some options like --headline or --car. Doesn't make sense idk
 # --stage should take the number of the stage too (takes only the name)
+# bit shitty to implement, needs --location to find the stage name
 #
 # ???
 # getting BrokenPipeError when piping into | less
 # BrokenPipeError: [Errno 32] Broken pipe
-
+#
 
 import sys
 import argparse
@@ -148,10 +145,10 @@ def find_stage(stage_name: list[str]) -> list[str]:
        else:
            suggestions = difflib.get_close_matches(name, all_stages)
            if suggestions:
-               eprint(f"Stage '{name}' not found -> using {suggestions[0]}")
+               eprint(f"Warning: Stage '{name}' not found -> using {suggestions[0]}")
                stage_list.append(suggestions[0])
            else:
-               eprint(f"Stage '{stage_name}' not found")
+               eprint(f"ERROR: Stage '{stage_name}' not found")
                exit()
     return stage_list
 
@@ -164,7 +161,7 @@ def main() -> None:
     parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
     parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
     parser.add_argument('-c', '--car', action='store_true', help='print out the used car')
-    parser.add_argument('-s', '--stage', nargs='+', default=None, help="search for stage name, will provide the best match")
+    parser.add_argument('-s', '--stage', nargs='+', default=None, help='search for stage name, will provide the best match, enclose long names in quotation marks: "nulla nulla"')
     parser.add_argument( '-d','--direction', choices=["forward", "reverse"], default=["forward", "reverse"])
     parser.add_argument( '-w','--weather', choices=["dry", "wet"], default=["dry", "wet"])
     parser.add_argument('-t', '--total_time', action='store_true', help='print total time of all selected stages')
@@ -183,10 +180,24 @@ def main() -> None:
                     continue
                 Stage.stage_vec.append(Stage(line))
     except FileNotFoundError:
-        eprint("file not found")
+        eprint("ERROR: file not found")
+        eprint("try: ", end='')
+        eprint("file needs to be in the same directory as rallydb.py")
+        exit()
+
+    # if -s is provided, search for stage names
+    # testing testing, surely there is a better way
+    # providing the number, needs the location argument to find the satae
+    #if args.stage:
+    #    if args.stage[0].isdigit():
+    #        # trying to use the class function i have no object but must ()
+    #        Stage.get_stage_name(args.stage[0])
+    #    else:
+    #        args.stage = find_stage(args.stage)
+    if args.stage:
+        args.stage = find_stage(args.stage)
 
     # getting the user provided arguments
-    # if stage name is provided, it's printing the "wrong" name, maybe a good thing..
     if args.argprint:
         # should exclude options like --headline or --car ??
         defaults = parser.parse_args([])
@@ -196,10 +207,6 @@ def main() -> None:
         for arg, value in user_provided_args.items():
             print(f'{arg}: {value}     ', end='')
         print(f"-----------  ")
-
-    # if -s is provided, search for stage names
-    if args.stage:
-        args.stage = find_stage(args.stage)
 
     for stage in Stage.stage_vec:
         if (
