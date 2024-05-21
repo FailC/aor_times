@@ -2,12 +2,11 @@
 #
 # early access version
 #
-# changelog: --stage takes multiple arguments, changed -h messages
+# changelog: support for custom filename, formating long if statements
 #
 # todo:
 #
 # add bonus group car names
-# fix --help formating
 # exclude groups or locations?
 # add daily weekly filter
 # add path option for changed name for leaderboards.txt file
@@ -31,7 +30,6 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 # not important, class is used to make the help message from -h a bit more readable
-# well still kinda ugly
 class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
     def _format_action_invocation(self, action):
         if not action.option_strings:
@@ -113,7 +111,6 @@ class Stage:
         "dakar": ["dakar", "dakar", "dakar", "dakar"],
         "monkey": ["monkey","monkey","monkey","monkey"]
     }
-
     debug_stage_count = 0
     def __init__(self,line):
         parts = line.split(":")
@@ -151,7 +148,7 @@ def find_stage(stage_name: list[str]) -> list[str]:
        else:
            suggestions = difflib.get_close_matches(name, all_stages)
            if suggestions:
-               eprint(f"Stage '{name}' not found. Using {suggestions[0]}")
+               eprint(f"Stage '{name}' not found -> using {suggestions[0]}")
                stage_list.append(suggestions[0])
            else:
                eprint(f"Stage '{stage_name}' not found")
@@ -159,17 +156,11 @@ def find_stage(stage_name: list[str]) -> list[str]:
     return stage_list
 
 
-def main():
+def main() -> None:
+    total_time = 0
     debug_week_counter = 0
-    with open("Leaderboards.txt", "r") as file:
-        for line in file:
-            if "daily" in line or "weekly" in line:
-                debug_week_counter += 1
-                continue
-            Stage.stage_vec.append(Stage(line))
-
+    filepath: str = ""
     parser = argparse.ArgumentParser(description="rally car goes vrooaaam",formatter_class=CustomFormatter)
-
     parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
     parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
     parser.add_argument('-c', '--car', action='store_true', help='print out the used car')
@@ -179,7 +170,20 @@ def main():
     parser.add_argument('-t', '--total_time', action='store_true', help='print total time of all selected stages')
     parser.add_argument('-x', '--only_time', action='store_true', help='only print the total time of selected stages')
     parser.add_argument('-a', '--argprint', action='store_true', help='print headlines containing provided arguments, for easy overview')
+    parser.add_argument('-f', '--filepath', default="Leaderboards.txt",help='provide custom file name')
     args = parser.parse_args()
+
+    if args.filepath:
+        filepath = args.filepath
+    try:
+        with open(filepath, "r") as file:
+            for line in file:
+                if "daily" in line or "weekly" in line:
+                    debug_week_counter += 1
+                    continue
+                Stage.stage_vec.append(Stage(line))
+    except FileNotFoundError:
+        eprint("file not found")
 
     # getting the user provided arguments
     # if stage name is provided, it's printing the "wrong" name, maybe a good thing..
@@ -193,13 +197,18 @@ def main():
             print(f'{arg}: {value}     ', end='')
         print(f"-----------  ")
 
-    total_time = 0
     # if -s is provided, search for stage names
     if args.stage:
         args.stage = find_stage(args.stage)
 
     for stage in Stage.stage_vec:
-        if stage.location in args.location and stage.group in args.group and stage.direction in args.direction and stage.weather in args.weather and (not args.stage or stage.stage in args.stage):
+        if (
+            stage.location in args.location and
+            stage.group in args.group and
+            stage.direction in args.direction and
+            stage.weather in args.weather and
+            (not args.stage or stage.stage in args.stage)
+        ):
             if not args.only_time:
                 # change to fstring buffer
                 if args.car:
