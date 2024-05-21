@@ -1,13 +1,12 @@
 ## Various scripts for the art of rally Leaderboards.txt file. For speedrunning, checking times or 100% completion of the game. 
 
-aor_times.py:
-Script for Art of Rally to check how many stages you completed and outputs the total time of all the groups.
+progress.py shows stage/groups completion
 
-aor_times_countries.py needs userinput after starting the script. 
+rallydb.py lets you search for groups, locations or for individual stages.   
 
-**File location:**
+**Both programs needs the Leaderboards.txt file that is located at:**
 - Linux: `$HOME/.config/unity3d/Funselektor Labs/Art of Rally/cloud/Leaderboards.txt`
-  - With Proton version, use the terminal:
+  - Or use the terminal (useful for proton steam version):
     ```
     find ~/ -name "Leaderboards.txt"
     ```
