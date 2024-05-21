@@ -42,10 +42,10 @@ def get_settings():
     global country_total
     global group_total
     global rainSetting
-    
+
     isAus = input("Do you want to include Australia? No/Yes ").lower()
     #print(f"is aus: {isAus}")
-    
+
     if isAus == "no" or isAus == "n":
         #print("yes")
         country_strings = ["Finland", "Sardinia", "Japan", "Norway", "Germany", "Kenya", "Indonesia"]
@@ -54,10 +54,10 @@ def get_settings():
         #print("no")
         country_strings = ["Finland", "Sardinia", "Japan", "Norway", "Germany", "Kenya", "Indonesia", "Australia"]
         country_total = 192
-        
+
     isBonus = input("Do you want bonus vehicles? No/Only/All ").lower()
     #print(f"is bonus: {isBonus}")
-    
+
     if isBonus == "no" or isBonus == "n":
         #print("no")
         group_strings = ["60s","70s","80s","GroupB","GroupS","GroupA"]
@@ -70,10 +70,10 @@ def get_settings():
         #print("all")
         group_strings = ["60s","70s","80s","GroupB","GroupS","GroupA","Logging","Vans","Dakar","Monkey"]
         group_total = 10
-        
-    
+
+
     isRain = input("Do you want to include rain stages? Dry/Wet/Both ").lower()
-    
+
     if isRain == "dry" or isRain == "d":
         rainSetting = "dry"
         country_total = country_total / 2
@@ -124,7 +124,7 @@ try:
                                     group_total_time += time
                                     group_counts[group] += time
                                     group_stages[group] += 1
-                                    
+
 
                 #Countries
                 for country in country_strings:
@@ -152,7 +152,7 @@ try:
                                     country_counts[country] += time
                                     country_stages[country] += 1
 
-                
+
 
 except FileNotFoundError:
     print("ERROR: File not found")

@@ -1,14 +1,32 @@
-# art of rally or as i've recently taken to calling it, art plus rally
+# art of rally or as i've recently taken to calling it, art + rally
 #
 # early access version
+#
+# CHANGELOG: better error with wrong filename, --argprint uses the right stage name now
+#
+# TODO:
+# add bonus group car names
+# exclude groups or locations?
+# add daily weekly filter
+#
+# --argprint needs to exclude some options like --headline or --car. Doesn't make sense idk
+# --stage should take the number of the stage too (takes only the name)
+# bit shitty to implement, needs --location to find the stage name
+#
+# ???
+# getting BrokenPipeError when piping into | less
+# BrokenPipeError: [Errno 32] Broken pipe
 #
 
 import sys
 import argparse
 import difflib
 
+# for printing to stderr
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
 # not important, class is used to make the help message from -h a bit more readable
-# well still kinda ugly
 class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
     def _format_action_invocation(self, action):
         if not action.option_strings:
@@ -45,15 +63,12 @@ class Time:
     @staticmethod
     def convert_race_time(ms: int) -> tuple[int,int,int,int]:
         if ms >= 356400000:
-            # need the rust Option type here
+            # need the rust Option type here..
             raise TypeError
-        # Convert milliseconds to seconds
         total_seconds = ms // 1000
-        # Extract hours, minutes, and remaining seconds
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
         seconds = total_seconds % 60
-        # Extract remaining milliseconds
         milliseconds = ms % 1000
         return (hours, minutes, seconds, milliseconds)
     def print_time(self, hours=False):
@@ -93,7 +108,6 @@ class Stage:
         "dakar": ["dakar", "dakar", "dakar", "dakar"],
         "monkey": ["monkey","monkey","monkey","monkey"]
     }
-
     debug_stage_count = 0
     def __init__(self,line):
         parts = line.split(":")
@@ -118,75 +132,92 @@ class Stage:
     def get_car_name(self) -> str:
         return Stage.car_names[self.group][self.car_number]
 
-# maybe there is a shorter way, don't need the location
+
+# don't need the location for now
 # add this to a class? who needs OOP am i right..
-all_stages = {stage: location for location, stages in Stage.location_stage_names.items() for stage in stages}
-def find_stage(stage_name: str) -> str:
-    if stage_name in all_stages:
-        return stage_name
-    else:
-        suggestions = difflib.get_close_matches(stage_name, all_stages)
-        if suggestions:
-            eprint(f"Stage '{stage_name}' not found. Did you mean: {', '.join(suggestions)}?")
-            return suggestions[0]
-        else:
-            eprint(f"Stage '{stage_name}' not found")
-            exit()
+# I HECKING LOVE LIST COMPREHENSIONS
+all_stages: dict[str, str] = {stage: location for location, stages in Stage.location_stage_names.items() for stage in stages}
+def find_stage(stage_name: list[str]) -> list[str]:
+    stage_list = []
+    for name in stage_name:
+       if name in all_stages:
+           stage_list.append(name)
+       else:
+           suggestions = difflib.get_close_matches(name, all_stages)
+           if suggestions:
+               eprint(f"Warning: Stage '{name}' not found -> using {suggestions[0]}")
+               stage_list.append(suggestions[0])
+           else:
+               eprint(f"ERROR: Stage '{stage_name}' not found")
+               exit()
+    return stage_list
 
-# for printing to stderr
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
 
-
-def main():
-    week_counter = 0
-    with open("newLeaderboards.txt", "r") as file:
-        for line in file:
-            if "daily" in line or "weekly" in line:
-                week_counter += 1
-                continue
-            Stage.stage_vec.append(Stage(line))
-
+def main() -> None:
+    total_time = 0
+    debug_week_counter = 0
+    filepath: str = ""
     parser = argparse.ArgumentParser(description="rally car goes vrooaaam",formatter_class=CustomFormatter)
-
-    # for counting lines just use wc -l (no bloat..), doesnt work anymore with printing headline, works again with extra --argprint
-    # add types in the argument, instead in the class? not really necessary i think
-    # exclude groups or locations?
-    # add daily weekly filter
-    # add path option for changed name for leaderboards.txt file
-    # add option to print the headline containing all the chosen option?
-    parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], help='specify a location')
-    parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"], help='specify a group')
+    parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
+    parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
     parser.add_argument('-c', '--car', action='store_true', help='print out the used car')
-    # should stage take the number of the stage too?
-    parser.add_argument('-s', '--stage', default=None, help="search for stage name. Doesn't need the location argument")
+    parser.add_argument('-s', '--stage', nargs='+', default=None, help='search for stage name, will provide the best match, enclose long names in quotation marks: "nulla nulla"')
     parser.add_argument( '-d','--direction', choices=["forward", "reverse"], default=["forward", "reverse"])
     parser.add_argument( '-w','--weather', choices=["dry", "wet"], default=["dry", "wet"])
     parser.add_argument('-t', '--total_time', action='store_true', help='print total time of all selected stages')
     parser.add_argument('-x', '--only_time', action='store_true', help='only print the total time of selected stages')
     parser.add_argument('-a', '--argprint', action='store_true', help='print headlines containing provided arguments, for easy overview')
+    parser.add_argument('-f', '--filepath', default="Leaderboards.txt",help='provide custom file name')
     args = parser.parse_args()
 
-    # getting the user only provided arguments
-    # if stage name is provided, it's printing the "wrong" name
+    if args.filepath:
+        filepath = args.filepath
+    try:
+        with open(filepath, "r") as file:
+            for line in file:
+                if "daily" in line or "weekly" in line:
+                    debug_week_counter += 1
+                    continue
+                Stage.stage_vec.append(Stage(line))
+    except FileNotFoundError:
+        eprint("ERROR: file not found")
+        eprint("try: ", end='')
+        eprint("file needs to be in the same directory as rallydb.py")
+        exit()
+
+    # if -s is provided, search for stage names
+    # testing testing, surely there is a better way
+    # providing the number, needs the location argument to find the satae
+    #if args.stage:
+    #    if args.stage[0].isdigit():
+    #        # trying to use the class function i have no object but must ()
+    #        Stage.get_stage_name(args.stage[0])
+    #    else:
+    #        args.stage = find_stage(args.stage)
+    if args.stage:
+        args.stage = find_stage(args.stage)
+
+    # getting the user provided arguments
     if args.argprint:
-        # need to exclude some options like --headline or --car doesn't make sense
+        # should exclude options like --headline or --car ??
         defaults = parser.parse_args([])
+        # I HECKING LOVE LIST COMPREHENSIONS
         user_provided_args = {k: v for k, v in vars(args).items() if vars(args)[k] != vars(defaults)[k]}
         print(f"-----------  ", end='')
         for arg, value in user_provided_args.items():
             print(f'{arg}: {value}     ', end='')
         print(f"-----------  ")
 
-    total_time = 0
-    if args.stage:
-        args.stage = find_stage(args.stage)
-
-    #todo getting BrokenPipeError lol
     for stage in Stage.stage_vec:
-        if stage.location in args.location and stage.group in args.group and stage.direction in args.direction and stage.weather in args.weather and (not args.stage or stage.stage in args.stage):
+        if (
+            stage.location in args.location and
+            stage.group in args.group and
+            stage.direction in args.direction and
+            stage.weather in args.weather and
+            (not args.stage or stage.stage in args.stage)
+        ):
             if not args.only_time:
-                # kinda shit but oh well
+                # change to fstring buffer
                 if args.car:
                     print(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.car_name:<20} {stage.direction:<10} {stage.weather:<10}", end='')
                 else:
@@ -196,9 +227,7 @@ def main():
 
     if args.total_time:
         new = Time(total_time)
-        #print("total time:  ", end='')
         new.print_time(hours=True)
-
 
 
 if __name__ == "__main__":
