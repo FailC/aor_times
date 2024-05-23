@@ -2,10 +2,10 @@
 #
 # early access version
 #
-# CHANGELOG: add bonus group car names, argprint only prints releveant user args
+# CHANGELOG: fix bug --totaltime breaks if containing one dnf
 #
 # TODO:
-# exclude groups or locations?
+# exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
 # add daily weekly filter - seperate program?
 #
 # --stage should take the number of the stage too (takes only the name)
@@ -49,7 +49,7 @@ class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
 class Time:
     def __init__(self, ms: int):
         # ms = milliseconds
-        self.dnf: bool = False
+        self.is_dnf: bool = False
         try:
             hours, minutes, seconds, milliseconds = self.convert_race_time(int(ms))
             self.hours = hours
@@ -57,7 +57,7 @@ class Time:
             self.seconds = seconds
             self.milliseconds = milliseconds
         except TypeError:
-            self.dnf = True
+            self.is_dnf = True
 
     @staticmethod
     def convert_race_time(ms: int) -> tuple[int,int,int,int]:
@@ -71,7 +71,7 @@ class Time:
         milliseconds = ms % 1000
         return (hours, minutes, seconds, milliseconds)
     def print_time(self, hours=False):
-        if self.dnf:
+        if self.is_dnf:
             print("DNF")
             return
         if hours == True:
@@ -151,7 +151,7 @@ def find_stage(stage_name: list[str]) -> list[str]:
 def main() -> None:
     total_time:int  = 0
     debug_week_counter: int = 0
-    filepath: str = ""
+    filename: str = ""
     parser = argparse.ArgumentParser(description="rally car goes vrooaaam",formatter_class=CustomFormatter)
     parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
     parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
@@ -162,50 +162,41 @@ def main() -> None:
     parser.add_argument('-t', '--totaltime', action='store_true', help='print total time of all selected stages')
     parser.add_argument('-x', '--onlytime', action='store_true', help='only print the total time of selected stages')
     parser.add_argument('-a', '--argprint', action='store_true', help='print headlines containing provided arguments, for easy overview')
-    parser.add_argument('-f', '--filepath', default="Leaderboards.txt",help='provide custom file name')
+    parser.add_argument('-f', '--filename', default="Leaderboards.txt",help='provide custom file name')
     args = parser.parse_args()
-    # add values to ignore with argprint:
-    ignore_user_args = ["only_time", "argprint", "total_time", "car"]
 
-    if args.filepath:
-        filepath = args.filepath
+    # add arguments to ignore with --argprint:
+    ignore_user_args = ["onlytime", "argprint", "totaltime", "car"]
+
+    if args.filename:
+        filename = args.filename
     try:
-        with open(filepath, "r") as file:
+        with open(filename, "r") as file:
             for line in file:
                 if "daily" in line or "weekly" in line:
                     debug_week_counter += 1
                     continue
                 Stage.stage_vec.append(Stage(line))
     except FileNotFoundError:
-        eprint("ERROR: file not found")
+        eprint(f"ERROR:  {args.filename}  file not found")
         eprint("try: ", end='')
         eprint("file needs to be in the same directory as rallydb.py")
         exit()
 
-    # if -s is provided, search for stage names
-    # testing testing, surely there is a better way
-    # providing the number, needs the location argument to find the satae
-    #if args.stage:
-    #    if args.stage[0].isdigit():
-    #        # trying to use the class function i have no object but must ()
-    #        Stage.get_stage_name(args.stage[0])
-    #    else:
-    #        args.stage = find_stage(args.stage)
     if args.stage:
         args.stage = find_stage(args.stage)
 
     # getting the user provided arguments
     if args.argprint:
-        # should exclude options like --headline or --car ??
         defaults = parser.parse_args([])
         # I HECKING LOVE LIST COMPREHENSIONS
         user_provided_args = {k: v for k, v in vars(args).items() if vars(args)[k] != vars(defaults)[k]}
-        print(f"-----------  ", end='')
+        print(f"----------   ", end='')
         for arg, value in user_provided_args.items():
             if arg in ignore_user_args:
                 continue
-            print(f'{arg}: {value}     ', end='')
-        print(f"-----------  ")
+            print(f'{value}   ', end='')
+        print(f"----------   ")
 
     for stage in Stage.stage_vec:
         if (
@@ -216,16 +207,17 @@ def main() -> None:
             (not args.stage or stage.stage in args.stage)
         ):
             if not args.onlytime:
-                # change to fstring buffer
                 if args.car:
                     print(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.car_name:<20} {stage.direction:<10} {stage.weather:<10}", end='')
                 else:
                     print(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.direction:<10} {stage.weather:<10}", end='')
                 stage.time.print_time()
-            total_time += stage.time_ms
+            if not stage.time.is_dnf:
+                total_time += stage.time_ms
 
     if args.totaltime:
         new = Time(total_time)
+        print(f"----------   ", end='')
         new.print_time(hours=True)
 
 
