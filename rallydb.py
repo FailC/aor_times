@@ -2,14 +2,12 @@
 #
 # early access version
 #
-# CHANGELOG: better error with wrong filename, --argprint uses the right stage name now
+# CHANGELOG: fix bug --totaltime breaks if containing one dnf
 #
 # TODO:
-# add bonus group car names
-# exclude groups or locations?
-# add daily weekly filter
+# exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
+# add daily weekly filter - seperate program?
 #
-# --argprint needs to exclude some options like --headline or --car. Doesn't make sense idk
 # --stage should take the number of the stage too (takes only the name)
 # bit shitty to implement, needs --location to find the stage name
 #
@@ -22,7 +20,7 @@ import sys
 import argparse
 import difflib
 
-# for printing to stderr
+# for printing to stderr, for >>
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -49,8 +47,9 @@ class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
 
 
 class Time:
-    def __init__(self, ms):
-        self.dnf: bool = False
+    def __init__(self, ms: int):
+        # ms = milliseconds
+        self.is_dnf: bool = False
         try:
             hours, minutes, seconds, milliseconds = self.convert_race_time(int(ms))
             self.hours = hours
@@ -58,7 +57,7 @@ class Time:
             self.seconds = seconds
             self.milliseconds = milliseconds
         except TypeError:
-            self.dnf = True
+            self.is_dnf = True
 
     @staticmethod
     def convert_race_time(ms: int) -> tuple[int,int,int,int]:
@@ -72,7 +71,7 @@ class Time:
         milliseconds = ms % 1000
         return (hours, minutes, seconds, milliseconds)
     def print_time(self, hours=False):
-        if self.dnf:
+        if self.is_dnf:
             print("DNF")
             return
         if hours == True:
@@ -92,9 +91,6 @@ class Stage:
         "indonesia": ["mount kawi", "semangka island", "satonda island", "oreng valley", "sangeang island", "kalabakan island"],
         "australia": ["gum scrub", "toorooka", "nulla nulla", "comara canyon", "lake lucernia", "wombamurra"]
     }
-    # add bonus cars
-    # todo check if the integers are the right cars
-    # car integer starts at 0
     car_names = {
         "60s": ["the esky v1", "the meanie", "la montaine", "das 220", "das 119i", "le gorde", "la regina", "the rotary kei"],
         "70s": ["the esky v2", "il nonno 313", "the rotary 3", "la wedge", "il cavallo 803", "das 119e", "la hepta", "the pepple v1", "the pepple v2", "the zetto"],
@@ -102,11 +98,10 @@ class Stage:
         "groupb": ["the 4r6","le 502","das hammer v2","il gorilla 4s","the cozzie sr2","the cozzie sr71","the rotary b7","das hammer v3","il monster","il cavallo 882","le cinq b","das uberspeedvan", "the king of africa", "das 559", "the hyena", "das maestro"],
         "groups": ["das eibenhammer","the rotary s7","the umibozu","il gorilla e1","le 504","il gorilla e2","das superbaus","the t22"],
         "groupa": ["il gorillona","the fujin","the liftback","the max attack","the cozzie 90","the kingpin"],
-        # todo add bonus car names
-        "logging": ["logging truck"],
-        "vans": ["van", "van", "van", "van", "van"],
-        "dakar": ["dakar", "dakar", "dakar", "dakar"],
-        "monkey": ["monkey","monkey","monkey","monkey"]
+        "vans": ["das speedvan", "das hi-speedvan", "das cube van", "funselector's van"],
+        "monkey": ["monkey"],
+        "dakar": ["dakar"],
+        "logging": ["logging truck"]
     }
     debug_stage_count = 0
     def __init__(self,line):
@@ -138,7 +133,7 @@ class Stage:
 # I HECKING LOVE LIST COMPREHENSIONS
 all_stages: dict[str, str] = {stage: location for location, stages in Stage.location_stage_names.items() for stage in stages}
 def find_stage(stage_name: list[str]) -> list[str]:
-    stage_list = []
+    stage_list: list[str] = []
     for name in stage_name:
        if name in all_stages:
            stage_list.append(name)
@@ -154,9 +149,9 @@ def find_stage(stage_name: list[str]) -> list[str]:
 
 
 def main() -> None:
-    total_time = 0
-    debug_week_counter = 0
-    filepath: str = ""
+    total_time:int  = 0
+    debug_week_counter: int = 0
+    filename: str = ""
     parser = argparse.ArgumentParser(description="rally car goes vrooaaam",formatter_class=CustomFormatter)
     parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
     parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
@@ -164,49 +159,44 @@ def main() -> None:
     parser.add_argument('-s', '--stage', nargs='+', default=None, help='search for stage name, will provide the best match, enclose long names in quotation marks: "nulla nulla"')
     parser.add_argument( '-d','--direction', choices=["forward", "reverse"], default=["forward", "reverse"])
     parser.add_argument( '-w','--weather', choices=["dry", "wet"], default=["dry", "wet"])
-    parser.add_argument('-t', '--total_time', action='store_true', help='print total time of all selected stages')
-    parser.add_argument('-x', '--only_time', action='store_true', help='only print the total time of selected stages')
+    parser.add_argument('-t', '--totaltime', action='store_true', help='print total time of all selected stages')
+    parser.add_argument('-x', '--onlytime', action='store_true', help='only print the total time of selected stages')
     parser.add_argument('-a', '--argprint', action='store_true', help='print headlines containing provided arguments, for easy overview')
-    parser.add_argument('-f', '--filepath', default="Leaderboards.txt",help='provide custom file name')
+    parser.add_argument('-f', '--filename', default="Leaderboards.txt",help='provide custom file name')
     args = parser.parse_args()
 
-    if args.filepath:
-        filepath = args.filepath
+    # add arguments to ignore with --argprint:
+    ignore_user_args = ["onlytime", "argprint", "totaltime", "car"]
+
+    if args.filename:
+        filename = args.filename
     try:
-        with open(filepath, "r") as file:
+        with open(filename, "r") as file:
             for line in file:
                 if "daily" in line or "weekly" in line:
                     debug_week_counter += 1
                     continue
                 Stage.stage_vec.append(Stage(line))
     except FileNotFoundError:
-        eprint("ERROR: file not found")
+        eprint(f"ERROR:  {args.filename}  file not found")
         eprint("try: ", end='')
         eprint("file needs to be in the same directory as rallydb.py")
         exit()
 
-    # if -s is provided, search for stage names
-    # testing testing, surely there is a better way
-    # providing the number, needs the location argument to find the satae
-    #if args.stage:
-    #    if args.stage[0].isdigit():
-    #        # trying to use the class function i have no object but must ()
-    #        Stage.get_stage_name(args.stage[0])
-    #    else:
-    #        args.stage = find_stage(args.stage)
     if args.stage:
         args.stage = find_stage(args.stage)
 
     # getting the user provided arguments
     if args.argprint:
-        # should exclude options like --headline or --car ??
         defaults = parser.parse_args([])
         # I HECKING LOVE LIST COMPREHENSIONS
         user_provided_args = {k: v for k, v in vars(args).items() if vars(args)[k] != vars(defaults)[k]}
-        print(f"-----------  ", end='')
+        print(f"----------   ", end='')
         for arg, value in user_provided_args.items():
-            print(f'{arg}: {value}     ', end='')
-        print(f"-----------  ")
+            if arg in ignore_user_args:
+                continue
+            print(f'{value}   ', end='')
+        print(f"----------   ")
 
     for stage in Stage.stage_vec:
         if (
@@ -216,17 +206,18 @@ def main() -> None:
             stage.weather in args.weather and
             (not args.stage or stage.stage in args.stage)
         ):
-            if not args.only_time:
-                # change to fstring buffer
+            if not args.onlytime:
                 if args.car:
                     print(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.car_name:<20} {stage.direction:<10} {stage.weather:<10}", end='')
                 else:
                     print(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.direction:<10} {stage.weather:<10}", end='')
                 stage.time.print_time()
-            total_time += stage.time_ms
+            if not stage.time.is_dnf:
+                total_time += stage.time_ms
 
-    if args.total_time:
+    if args.totaltime:
         new = Time(total_time)
+        print(f"----------   ", end='')
         new.print_time(hours=True)
 
 
