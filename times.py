@@ -13,6 +13,12 @@ import select
 # finland         lamppi               groupa          the fujin            forward    dry       02:32.515
 # ..
 
+# reading in times that looks like this?
+#arch :: code/pyrally/aor_times ‹testing*› » py rallydb.py -l finland -x -t -a
+#----------   finland   ----------
+#----------   6:09:06.173
+#arch :: code/pyrally/aor_times ‹testing*› »
+
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -73,6 +79,8 @@ def main():
             continue
         words = line.split()
         times = words[-1]
+        if times == "DNF":
+            continue
         min = int(times[0:2])
         sec = int(times[3:5])
         ms = int(times[6::])
