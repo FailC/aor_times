@@ -1,0 +1,246 @@
+import tkinter as tk
+from tkinter import ttk
+import rallydb as rb
+
+# TODO
+# arrange stuff
+# add search stage function
+# daily/weekly counter
+# add function to get filepath or custom filename
+# maybe button to select file/filepath
+# button to write stages to file?
+
+class App:
+    # every line in file
+    stages_from_file: list[rb.Stage] = []
+    # every selected object left side
+    selected_objects: list[rb.Stage] = []
+    # same but the objects
+    selected_options_list: list[str] = []
+    # results list, left side, the objects
+    results_vector: list[rb.Stage] = []
+
+    all_locations: list[str] = list(rb.Stage.location_stage_names.keys())
+    all_groups: list[str] = list(rb.Stage.car_names.keys())
+
+    def __init__(self, root):
+        self.root = root
+        self.root.title("RallyUI")
+        self.frame = ttk.Frame(self.root, padding=10)
+        self.frame.grid()
+        self.results_label = tk.Label(self.root, text="Results").grid(row=0, column=0)
+        self.results_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15,font=("courier", 12))
+        self.results_listbox.grid(row=1, column=0, padx=10, pady=5)
+        self.results_button = tk.Button(self.root, text='move>>', command=self.add_stage)
+        self.results_button.grid(row=2, column=2)
+        # right side
+        self.selected_label = tk.Label(self.root, text="Selected Stages")
+        self.selected_label.grid(row=0, column=3)
+        self.selected_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
+        self.selected_listbox.grid(row=1, column=3, padx=10, pady=5)
+        self.selected_button = tk.Button(self.root, text='<<move', command=self.remove_stage)
+        self.selected_button.grid(row=3, column=2)
+
+        #self.results_label = tk.Label(self.root, text="total time").grid(row=3, column=2)
+        self.selected_stages_time = tk.Label(self.root, text="total stages time", font=("courier", 12))
+        self.selected_stages_time.grid(row=3, column=3)
+
+        self.total_time_label = tk.Label(self.root, text="total time", font=("courier", 12))
+        self.total_time_label.grid(row=3, column=0)
+
+        self.clear_button = tk.Button(self.root, text="Clear Selections", command=self.clear_selections)
+        self.clear_button.grid(row=4, column=2)
+
+        self.text = tk.Label(self.root, text="use arrow keys or hjkl\nto add or remove stages").grid(row=5, column=2)
+
+        self.check_vars = {}
+        self.labels: list[str] = App.all_locations
+
+        root.bind('<Up>', self.navigate)
+        root.bind('<Down>', self.navigate)
+        root.bind('<Right>', self.add_stage)
+        root.bind('<Left>', self.remove_stage)
+        root.bind('h', self.remove_stage)
+        root.bind('l', self.add_stage)
+        root.bind('j', self.navigate)
+        root.bind('k', self.navigate)
+        self.results_listbox.select_set(0)
+        self.results_listbox.activate(0)
+
+        for i, label in enumerate(self.labels):
+            i += 5
+            var = tk.BooleanVar()
+            self.check_vars[label] = var
+            checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
+            checkbutton.grid(row=i, column=0, padx=10, pady=5, sticky="w")
+
+        self.check_vars = {}
+        self.labels: list[str] = App.all_groups
+        for i, label in enumerate(self.labels):
+            i += 5
+            var = tk.BooleanVar()
+            self.check_vars[label] = var
+            checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
+            checkbutton.grid(row=i, column=0, padx=110, pady=5, sticky="w")
+
+        self.check_vars = {}
+        self.labels: list[str] = ["dry", "wet"]
+        for i, label in enumerate(self.labels):
+             i += 5
+             var = tk.BooleanVar()
+             self.check_vars[label] = var
+             checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
+             checkbutton.grid(row=i, column=0, padx=210, pady=5, sticky="w")
+
+        self.check_vars = {}
+        self.labels: list[str] = ["forward", "reverse"]
+        for i, label in enumerate(self.labels):
+             i += 5
+             var = tk.BooleanVar()
+             self.check_vars[label] = var
+             checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
+             checkbutton.grid(row=i, column=0, padx=310, pady=5, sticky="w")
+
+        self.update_all_stages()
+
+    def navigate(self, event):
+        focused_widget = self.root.focus_get()
+        if isinstance(focused_widget, tk.Listbox):
+            if event.keysym in ['Up', 'k']:
+                self.move_up(focused_widget)
+            elif event.keysym in ['Down', 'j']:
+                self.move_down(focused_widget)
+
+    def move_up(self, listbox):
+        current_selection = listbox.curselection()
+        if current_selection:
+            current_index = current_selection[0]
+            if current_index > 0:
+                listbox.select_clear(current_index)
+                listbox.select_set(current_index - 1)
+                listbox.activate(current_index - 1)
+                listbox.see(current_index - 1)
+
+    def move_down(self, listbox):
+        current_selection = listbox.curselection()
+        if current_selection:
+            current_index = current_selection[0]
+            if current_index < listbox.size() - 1:
+                listbox.select_clear(current_index)
+                listbox.select_set(current_index + 1)
+                listbox.activate(current_index + 1)
+                listbox.see(current_index + 1)
+
+    def read_file(self):
+        with open("Leaderboards.txt", 'r') as file:
+            lines = file.readlines()
+        for line in lines:
+            if "daily" in line or "weekly" in line:
+               continue
+            try:
+                App.stages_from_file.append(rb.Stage(line))
+            except TypeError:
+                continue
+
+    def update_all_stages(self):
+        # left side
+        self.results_listbox.delete(0, tk.END)
+        self.results_vector.clear()
+        for object in App.stages_from_file:
+            if (object.location in App.selected_options_list and
+                object.group in App.selected_options_list and
+                object.weather in App.selected_options_list and
+                object.direction in App.selected_options_list
+            ):
+                time = object.time.get_time()
+                string: str = f"{object.location:<10} {object.stage:<17} {object.group:<7}{object.direction:<3} {object.weather:<3} {time}"
+                self.results_listbox.insert(tk.END, string)
+                self.results_vector.append(object)
+                #print(f"{object.time.get_time()} {object.stage}")
+            else:
+                continue
+        self.update_total_time()
+        self.update_stage_time()
+        self.results_listbox.select_set(0)
+        self.results_listbox.activate(0)
+
+
+    def add_stage(self, event):
+        # todo check both list,
+        selected_idx = self.results_listbox.get(tk.ACTIVE)
+        try:
+            index = self.results_listbox.curselection()[0]
+            if selected_idx:
+                self.selected_listbox.insert(tk.END, selected_idx)
+                App.selected_objects.append(App.results_vector[index])
+            self.update_stage_time()
+        except IndexError:
+            rb.eprint("debug: nothing to add")
+
+    def remove_stage(self, event):
+        selected_idx = self.selected_listbox.curselection()
+        try:
+            index = self.selected_listbox.curselection()[0]
+            if selected_idx:
+                self.selected_listbox.delete(selected_idx)
+                App.selected_objects.pop(index)
+            self.update_stage_time()
+            if index <= 0:
+                self.selected_listbox.select_set(0)
+            else:
+                self.selected_listbox.select_set(index-1)
+                self.selected_listbox.activate(0)
+        except IndexError:
+            rb.eprint("debug: nothing to remove")
+
+    def clear_selections(self):
+        self.selected_listbox.delete(0, tk.END)
+        App.selected_objects.clear()
+        self.update_stage_time()
+
+    def update_stage_time(self):
+        total_time = 0
+        hours, minutes, seconds, ms = 0,0,0,0
+        for stage in App.selected_objects:
+            if stage.time_ms >= 356400000:
+                continue
+            total_time += stage.time_ms
+        try:
+            hours, minutes, seconds, ms = rb.Time.convert_race_time(total_time)
+        except TypeError:
+            print("error converting number in Leaderboards file to time")
+        total_time_str = f"{hours}:{minutes:02d}:{seconds:02d}.{ms:03d}"
+        #print(f"{hours}:{minutes}:{seconds}.{ms}")
+        self.selected_stages_time.config(text=total_time_str)
+
+    def update_total_time(self):
+        total_time = 0
+        hours, minutes, seconds, ms = 0,0,0,0
+        for stage in self.results_vector:
+            total_time += stage.time_ms
+            try:
+                hours, minutes, seconds, ms = rb.Time.convert_race_time(total_time)
+            except TypeError:
+                continue
+        total_time_str = f"{hours}:{minutes:02d}:{seconds:02d}.{ms:03d}"
+        self.total_time_label.config(text=total_time_str)
+
+    def toggle_action(self, var, label):
+        if var.get():
+            App.selected_options_list.append(label)
+            #print(f"{label} enabled")
+        else:
+            #print(f"{label} disabled")
+            App.selected_options_list.remove(label)
+        self.update_all_stages()
+        self.results_listbox.select_set(0)
+        self.results_listbox.activate(0)
+
+def main():
+    root = tk.Tk()
+    app = App(root)
+    app.read_file()
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()
