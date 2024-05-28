@@ -3,7 +3,7 @@
 #
 # early access version
 #
-# CHANGELOG:
+# CHANGELOG: change print_time to get_time for better working for rallyUI, support for multiple -l locations
 #
 # TODO:
 # exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
@@ -80,6 +80,16 @@ class Time:
             return
         print(f"{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}")
 
+    def get_time(self, hours=False) -> str:
+        string: str = ""
+        if self.is_dnf:
+             return "DNF"
+        if hours == True:
+             string = f"{self.hours}:{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}"
+             return string
+        return f"{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}"
+
+
 class Stage:
     stage_vec = []
     location_stage_names = {
@@ -154,8 +164,8 @@ def main() -> None:
     debug_week_counter: int = 0
     filename: str = ""
     parser = argparse.ArgumentParser(description="rally car goes vrooaaam",formatter_class=CustomFormatter)
-    parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
-    parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
+    parser.add_argument( '-l','--location', nargs='+', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
+    parser.add_argument( '-g','--group', nargs='+', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
     parser.add_argument('-c', '--car', action='store_true', help='print out the used car')
     parser.add_argument('-s', '--stage', nargs='+', default=None, help='search for stage name, will provide the best match, enclose long names in quotation marks: "nulla nulla"')
     parser.add_argument( '-d','--direction', choices=["forward", "reverse"], default=["forward", "reverse"])
@@ -219,7 +229,8 @@ def main() -> None:
     if args.totaltime:
         new = Time(total_time)
         print(f"----------   ", end='')
-        new.print_time(hours=True)
+        print(new.get_time())
+        #new.print_time(hours=True)
 
 
 if __name__ == "__main__":
