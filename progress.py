@@ -4,6 +4,34 @@
 #
 # made by FailX and MxCraven
 
+import argparse
+
+# not important, class is used to make the help message from -h a bit more readable - FailX (craven doesn't know what this does at all)
+class CustomFormatter(argparse.ArgumentDefaultsHelpFormatter):
+    def _format_action_invocation(self, action):
+        if not action.option_strings:
+            # "metavar"
+            metavar = action.dest.upper()
+            return metavar
+        else:
+            parts = []
+            # if the Optional doesn't take a value, format is "-s" or "--long"
+            if action.nargs == 0:
+                parts.extend(action.option_strings)
+            # if the Optional takes a value, format is "-s ARGS" or "--long ARGS"
+            else:
+                default = self._get_default_metavar_for_optional(action)
+                args_string = self._format_args(action, default)
+                parts.extend(action.option_strings)
+                parts[-1] += ' ' + args_string
+
+            return ', '.join(parts)
+
+parser = argparse.ArgumentParser(description="Gives info of your leaderboard file",formatter_class=CustomFormatter)
+parser.add_argument('-f','--file', action='store_const', const='file')
+args = parser.parse_args()
+
+
 def convert(milliseconds):
     seconds = milliseconds / 1000 
     minutes = seconds / 60
@@ -21,7 +49,7 @@ def convert_hour_min(milliseconds):
      return ms,s,m,h,d
 
 
-output_array = []
+output_array = ["_____________________"]
 
 # init hashmap
 
@@ -221,7 +249,21 @@ max_stages = country_total * group_total
 # print(f"total stages: {stage_counter} / {max_stages:.0f}")
 output_array.append(f"total stages: {stage_counter} / {max_stages:.0f}")
 
-#Print out all lines in output_array. In future convert this to use the options
-for line in output_array:
-    print(line)
+
+if args.file:
+    #Output to file
+    with open("lb_output.txt", "a") as file:
+        for line in output_array:
+            print(line)
+            file.write(f"{line}\n")
+        
+    print("File written")
+    
+else:
+    #Print out all lines in output_array. In future convert this to use the options
+    for line in output_array:
+        print(line)
+
+    
+    
 
