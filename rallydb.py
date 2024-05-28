@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 # art of rally or as i've recently taken to calling it, art + rally
 #
 # early access version
 #
-# CHANGELOG: fix bug --totaltime breaks if containing one dnf
+# CHANGELOG:
 #
 # TODO:
 # exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
