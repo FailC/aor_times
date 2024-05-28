@@ -24,9 +24,9 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 def convert_race_time(ms: int) -> tuple[int,int,int,int]:
-    if ms >= 356400000:
+    #if ms >= 356400000:
     # need the rust Option type here..
-        raise TypeError
+        #raise TypeError
     total_seconds = ms // 1000
     hours = total_seconds // 3600
     minutes = (total_seconds % 3600) // 60
@@ -65,7 +65,6 @@ def main():
 
     else:
         filename: str = args.filename.strip()
-        print(filename)
         try:
             with open(filename, 'r') as file:
                 lines = file.readlines()
@@ -91,7 +90,10 @@ def main():
         milliseconds += sec * 1000
         milliseconds += min * 60 * 1000
     h, m, s, ms = convert_race_time(milliseconds)
-    print(f"{m:02d}:{s:02d}.{ms:03d}")
+    if h >= 1:
+        print(f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}")
+    else:
+        print(f"{m:02d}:{s:02d}.{ms:03d}")
 
 if __name__ == "__main__":
     main()
