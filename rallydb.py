@@ -3,7 +3,7 @@
 #
 # early access version
 #
-# CHANGELOG: change print_time to get_time for better working for rallyUI, support for multiple -l locations
+# CHANGELOG: change find_stage, returns error instead if exit()
 #
 # TODO:
 # exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
@@ -155,7 +155,8 @@ def find_stage(stage_name: list[str]) -> list[str]:
                stage_list.append(suggestions[0])
            else:
                eprint(f"ERROR: Stage '{stage_name}' not found")
-               exit()
+               raise SystemError
+               #exit()
     return stage_list
 
 
@@ -195,7 +196,10 @@ def main() -> None:
         exit()
 
     if args.stage:
-        args.stage = find_stage(args.stage)
+        try:
+            args.stage = find_stage(args.stage)
+        except SystemError:
+            exit()
 
     # getting the user provided arguments
     if args.argprint:

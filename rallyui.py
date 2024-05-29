@@ -10,6 +10,9 @@ import rallydb as rb
 # maybe button to select file/filepath
 # button to write stages to file?
 
+def print_error():
+   rb.eprint("ERROR: oh my god, run RUN!!!")
+
 class App:
     # every line in file
     stages_from_file: list[rb.Stage] = []
@@ -22,6 +25,13 @@ class App:
 
     all_locations: list[str] = list(rb.Stage.location_stage_names.keys())
     all_groups: list[str] = list(rb.Stage.car_names.keys())
+    all_stages = list(rb.Stage.location_stage_names.values())
+    stages_list = []
+    for stages in all_stages:
+        for stage in stages:
+            stages_list.append(stage)
+    # tthis is the only way surely...
+    user_input_stage = ""
 
     def __init__(self, root):
         self.root = root
@@ -30,6 +40,8 @@ class App:
         self.frame.grid()
         self.results_label = tk.Label(self.root, text="Results").grid(row=0, column=0)
         self.results_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15,font=("courier", 12))
+        self.results_listbox.bind('<FocusIn>', self.on_focus_in)
+        self.results_listbox.bind('<FocusOut>', self.on_focus_out)
         self.results_listbox.grid(row=1, column=0, padx=10, pady=5)
         self.results_button = tk.Button(self.root, text='move>>', command=self.add_stage)
         self.results_button.grid(row=2, column=2)
@@ -37,6 +49,8 @@ class App:
         self.selected_label = tk.Label(self.root, text="Selected Stages")
         self.selected_label.grid(row=0, column=3)
         self.selected_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
+        self.selected_listbox.bind('<FocusIn>', self.on_focus_in)
+        self.selected_listbox.bind('<FocusOut>', self.on_focus_out)
         self.selected_listbox.grid(row=1, column=3, padx=10, pady=5)
         self.selected_button = tk.Button(self.root, text='<<move', command=self.remove_stage)
         self.selected_button.grid(row=3, column=2)
@@ -51,10 +65,21 @@ class App:
         self.clear_button = tk.Button(self.root, text="Clear Selections", command=self.clear_selections)
         self.clear_button.grid(row=4, column=2)
 
+        self.clear_user_input = tk.Button(self.root, text="reset search", command=self.clear_input)
+        self.clear_user_input.grid(row=5, column=3)
+
         self.text = tk.Label(self.root, text="use arrow keys or hjkl\nto add or remove stages").grid(row=5, column=2)
 
         self.check_vars = {}
         self.labels: list[str] = App.all_locations
+
+
+        self.entry = tk.Entry(root)
+        self.entry.grid(row=4, column=3)
+        self.entry.bind('<Return>', self.on_enter)
+        self.entry.bind('<FocusIn>', self.on_entry_focus_in)
+        self.entry.bind('<FocusOut>', self.on_entry_focus_out)
+
 
         root.bind('<Up>', self.navigate)
         root.bind('<Down>', self.navigate)
@@ -103,6 +128,35 @@ class App:
 
         self.update_all_stages()
 
+    def on_focus_in(self, event):
+            self.bind_navigation_keys()
+    def on_focus_out(self, event):
+            self.unbind_navigation_keys()
+    def on_entry_focus_in(self, event):
+            self.unbind_navigation_keys()
+    def on_entry_focus_out(self, event):
+            self.bind_navigation_keys()
+
+    def bind_navigation_keys(self):
+        self.root.bind('<Up>', self.navigate)
+        self.root.bind('<Down>', self.navigate)
+        self.root.bind('h', self.navigate)
+        self.root.bind('j', self.navigate)
+        self.root.bind('k', self.navigate)
+        self.root.bind('l', self.navigate)
+        self.root.bind('<Right>', self.add_stage)  # Bind the Right arrow key to add_stage
+        self.root.bind('<Left>', self.remove_stage)  # Bind the Right arrow key to add_stage
+
+    def unbind_navigation_keys(self):
+        self.root.unbind('<Up>')
+        self.root.unbind('<Down>')
+        self.root.unbind('h')
+        self.root.unbind('j')
+        self.root.unbind('k')
+        self.root.unbind('l')
+        self.root.unbind('<Right>')
+        self.root.unbind('<Left>')
+
     def navigate(self, event):
         focused_widget = self.root.focus_get()
         if isinstance(focused_widget, tk.Listbox):
@@ -110,6 +164,10 @@ class App:
                 self.move_up(focused_widget)
             elif event.keysym in ['Down', 'j']:
                 self.move_down(focused_widget)
+            elif event.keysym in ['l']:
+                self.add_stage()
+            elif event.keysym in ['h']:
+                self.remove_stage()
 
     def move_up(self, listbox):
         current_selection = listbox.curselection()
@@ -150,8 +208,10 @@ class App:
             if (object.location in App.selected_options_list and
                 object.group in App.selected_options_list and
                 object.weather in App.selected_options_list and
-                object.direction in App.selected_options_list
+                object.direction in App.selected_options_list and
+                (not App.user_input_stage or App.user_input_stage in object.stage)
             ):
+
                 time = object.time.get_time()
                 string: str = f"{object.location:<10} {object.stage:<17} {object.group:<7}{object.direction:<3} {object.weather:<3} {time}"
                 self.results_listbox.insert(tk.END, string)
@@ -164,9 +224,19 @@ class App:
         self.results_listbox.select_set(0)
         self.results_listbox.activate(0)
 
+    def add_stage_test(self):
+        focused_widget = self.root.focus_get()
+        if focused_widget == self.results_listbox:
+            selected_idx = self.results_listbox.get(tk.ACTIVE)
+            index = self.results_listbox.curselection()[0]
+            if selected_idx:
+                self.selected_listbox.insert(tk.END, selected_idx)
+                App.selected_objects.append(App.results_vector[index])
+            self.update_stage_time()
 
-    def add_stage(self, event):
+    def add_stage(self):
         # todo check both list,
+        focused_widget = self.root.focus_get()
         selected_idx = self.results_listbox.get(tk.ACTIVE)
         try:
             index = self.results_listbox.curselection()[0]
@@ -177,7 +247,7 @@ class App:
         except IndexError:
             rb.eprint("debug: nothing to add")
 
-    def remove_stage(self, event):
+    def remove_stage(self):
         selected_idx = self.selected_listbox.curselection()
         try:
             index = self.selected_listbox.curselection()[0]
@@ -235,6 +305,33 @@ class App:
         self.update_all_stages()
         self.results_listbox.select_set(0)
         self.results_listbox.activate(0)
+
+    def on_enter(self, event):
+        user_input: str = self.entry.get()
+        user_list: list[str] = []
+        user_list.append(user_input)
+        print(f"user: {user_input}")
+        #self.entry.delete(0, tk.END)
+        try:
+            #App.stages_list.clear()
+            search_results: list[str] = rb.find_stage(user_list)
+            #App.stages_list.append(search_results[0])
+            App.user_input_stage = search_results[0]
+            print(f"search: {search_results}")
+            self.update_all_stages()
+            # add a clear button
+        except SystemError:
+            print_error()
+        # delete search result after searching?
+
+    def clear_input(self):
+        self.entry.delete(0, tk.END)
+        App.user_input_stage = ""
+        self.update_all_stages()
+    # find stage
+    # rb.all_stages
+    # rb.find_stage()
+
 
 def main():
     root = tk.Tk()
