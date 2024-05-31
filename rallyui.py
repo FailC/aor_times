@@ -19,6 +19,9 @@ import rallydb as rb
 # make rallyui standalone?
 # if searching for stage, activate the right country
 
+# bugs
+# on macOS arrow keys dont work + plus weird layout
+
 
 def panic():
     rb.eprint("ERROR: oh my god, run RUN!!!")
@@ -247,7 +250,7 @@ class App:
         self.results_listbox.select_set(0)
         self.results_listbox.activate(0)
 
-    def add_stage_test(self):
+    def add_stage(self, event=None):
         focused_widget = self.root.focus_get()
         if focused_widget == self.results_listbox:
             selected_idx = self.results_listbox.get(tk.ACTIVE)
@@ -257,7 +260,8 @@ class App:
                 App.selected_objects.append(App.results_vector[index])
             self.update_stage_time()
 
-    def add_stage(self):
+    # delete this..
+    def add_stage_test(self):
         # todo check both list,
         focused_widget = self.root.focus_get()
         selected_idx = self.results_listbox.get(tk.ACTIVE)
@@ -270,7 +274,7 @@ class App:
         except IndexError:
             rb.eprint("debug: nothing to add")
 
-    def remove_stage(self):
+    def remove_stage(self, event=None):
         selected_idx = self.selected_listbox.curselection()
         try:
             index = self.selected_listbox.curselection()[0]
