@@ -1,17 +1,28 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 import rallydb as rb
+
+# changelog
+# create very important panic function
 
 # TODO
 # arrange stuff
-# add search stage function
+# move description to info box
 # daily/weekly counter
 # add function to get filepath or custom filename
 # maybe button to select file/filepath
 # button to write stages to file?
 
-def print_error():
-   rb.eprint("ERROR: oh my god, run RUN!!!")
+# ideas
+# make some buttons on top for more info, maybe for file loading
+# make rallyui standalone?
+# if searching for stage, activate the right country
+
+
+def panic():
+    rb.eprint("ERROR: oh my god, run RUN!!!")
+    rb.sys.exit()
 
 class App:
     # every line in file
@@ -36,46 +47,55 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("RallyUI")
+        #root.geometry("800x600")
+        self.menu_bar = tk.Menu(self.root)
+        self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.file_menu.add_command(label="Help", command=self.show_help)
+        self.file_menu.add_command(label="Exit", command=self.root.quit)
+        self.menu_bar.add_cascade(label="Options", menu=self.file_menu)
+
+        self.root.config(menu=self.menu_bar)
+
         self.frame = ttk.Frame(self.root, padding=10)
         self.frame.grid()
-        self.results_label = tk.Label(self.root, text="Results").grid(row=0, column=0)
+        #self.results_label = tk.Label(self.root, text="Results").grid(row=0, column=0)
         self.results_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15,font=("courier", 12))
         self.results_listbox.bind('<FocusIn>', self.on_focus_in)
         self.results_listbox.bind('<FocusOut>', self.on_focus_out)
-        self.results_listbox.grid(row=1, column=0, padx=10, pady=5)
-        self.results_button = tk.Button(self.root, text='move>>', command=self.add_stage)
-        self.results_button.grid(row=2, column=2)
+        self.results_listbox.grid(row=0, column=0, padx=10, pady=5)
+        self.results_button = tk.Button(self.root, text='add>>', command=self.add_stage)
+        self.results_button.grid(row=1, column=1)
         # right side
-        self.selected_label = tk.Label(self.root, text="Selected Stages")
-        self.selected_label.grid(row=0, column=3)
+        #self.selected_label = tk.Label(self.root, text="Selected Stages").grid(row=0, column=3)
         self.selected_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
         self.selected_listbox.bind('<FocusIn>', self.on_focus_in)
         self.selected_listbox.bind('<FocusOut>', self.on_focus_out)
-        self.selected_listbox.grid(row=1, column=3, padx=10, pady=5)
-        self.selected_button = tk.Button(self.root, text='<<move', command=self.remove_stage)
-        self.selected_button.grid(row=3, column=2)
+        self.selected_listbox.grid(row=0, column=3, padx=10, pady=5)
+        self.selected_button = tk.Button(self.root, text='<<remove', command=self.remove_stage)
+        self.selected_button.grid(row=2, column=1)
 
         #self.results_label = tk.Label(self.root, text="total time").grid(row=3, column=2)
         self.selected_stages_time = tk.Label(self.root, text="total stages time", font=("courier", 12))
-        self.selected_stages_time.grid(row=3, column=3)
+        self.selected_stages_time.grid(row=1, column=3)
+        self.selected_label = tk.Label(self.root, text="sum of best", font=("courier", 12)).grid(row=2, column=3)
 
         self.total_time_label = tk.Label(self.root, text="total time", font=("courier", 12))
-        self.total_time_label.grid(row=3, column=0)
+        self.total_time_label.grid(row=1, column=0)
 
-        self.clear_button = tk.Button(self.root, text="Clear Selections", command=self.clear_selections)
-        self.clear_button.grid(row=4, column=2)
+        self.clear_button = tk.Button(self.root, text="Clear all", command=self.clear_selections)
+        self.clear_button.grid(row=4, column=1)
 
         self.clear_user_input = tk.Button(self.root, text="reset search", command=self.clear_input)
-        self.clear_user_input.grid(row=5, column=3)
+        self.clear_user_input.grid(row=9, column=1)
 
-        self.text = tk.Label(self.root, text="use arrow keys or hjkl\nto add or remove stages").grid(row=5, column=2)
+        self.text = tk.Label(self.root, text="use arrow keys or hjkl\nto add or remove stages").grid(row=5, column=1)
 
         self.check_vars = {}
         self.labels: list[str] = App.all_locations
 
-
+        self.label_entry = tk.Label(self.root, text="search for stagename:").grid(row=7, column=1)
         self.entry = tk.Entry(root)
-        self.entry.grid(row=4, column=3)
+        self.entry.grid(row=8, column=1)
         self.entry.bind('<Return>', self.on_enter)
         self.entry.bind('<FocusIn>', self.on_entry_focus_in)
         self.entry.bind('<FocusOut>', self.on_entry_focus_out)
@@ -93,7 +113,7 @@ class App:
         self.results_listbox.activate(0)
 
         for i, label in enumerate(self.labels):
-            i += 5
+            i += 4
             var = tk.BooleanVar()
             self.check_vars[label] = var
             checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
@@ -102,7 +122,7 @@ class App:
         self.check_vars = {}
         self.labels: list[str] = App.all_groups
         for i, label in enumerate(self.labels):
-            i += 5
+            i += 4
             var = tk.BooleanVar()
             self.check_vars[label] = var
             checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
@@ -111,7 +131,7 @@ class App:
         self.check_vars = {}
         self.labels: list[str] = ["dry", "wet"]
         for i, label in enumerate(self.labels):
-             i += 5
+             i += 4
              var = tk.BooleanVar()
              self.check_vars[label] = var
              checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
@@ -120,7 +140,7 @@ class App:
         self.check_vars = {}
         self.labels: list[str] = ["forward", "reverse"]
         for i, label in enumerate(self.labels):
-             i += 5
+             i += 4
              var = tk.BooleanVar()
              self.check_vars[label] = var
              checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
@@ -188,6 +208,9 @@ class App:
                 listbox.select_set(current_index + 1)
                 listbox.activate(current_index + 1)
                 listbox.see(current_index + 1)
+    def show_help(self):
+        messagebox.showinfo("Help", "Add search options with the boxes,\nadd stages to the right window with arrow keyes or with the move>> button\nThe search function only works if the corresponding country is selected.")
+
 
     def read_file(self):
         with open("Leaderboards.txt", 'r') as file:
@@ -321,8 +344,8 @@ class App:
             self.update_all_stages()
             # add a clear button
         except SystemError:
-            print_error()
-        # delete search result after searching?
+            pass
+            #rb.eprint("ERROR: stage not found?")
 
     def clear_input(self):
         self.entry.delete(0, tk.END)

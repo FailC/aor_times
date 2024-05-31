@@ -3,7 +3,7 @@
 #
 # early access version
 #
-# CHANGELOG: change find_stage, returns error instead if exit()
+# CHANGELOG:
 #
 # TODO:
 # exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
@@ -20,7 +20,6 @@
 import sys
 import argparse
 import difflib
-
 # for printing to stderr, for >>
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -193,13 +192,13 @@ def main() -> None:
         eprint(f"ERROR:  {args.filename}  file not found")
         eprint("try: ", end='')
         eprint("file needs to be in the same directory as rallydb.py")
-        exit()
+        sys.exit()
 
     if args.stage:
         try:
             args.stage = find_stage(args.stage)
         except SystemError:
-            exit()
+            sys.exit()
 
     # getting the user provided arguments
     if args.argprint:
