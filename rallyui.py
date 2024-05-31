@@ -19,9 +19,6 @@ import rallydb as rb
 # make rallyui standalone?
 # if searching for stage, activate the right country
 
-# bugs
-# on macOS arrow keys dont work + plus weird layout
-
 
 def panic():
     rb.eprint("ERROR: oh my god, run RUN!!!")
@@ -73,32 +70,32 @@ class App:
         self.selected_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
         self.selected_listbox.bind('<FocusIn>', self.on_focus_in)
         self.selected_listbox.bind('<FocusOut>', self.on_focus_out)
-        self.selected_listbox.grid(row=0, column=3, padx=10, pady=5)
+        self.selected_listbox.grid(row=0, column=2, padx=10, pady=5)
         self.selected_button = tk.Button(self.root, text='<<remove', command=self.remove_stage)
         self.selected_button.grid(row=2, column=1)
 
         #self.results_label = tk.Label(self.root, text="total time").grid(row=3, column=2)
         self.selected_stages_time = tk.Label(self.root, text="total stages time", font=("courier", 12))
-        self.selected_stages_time.grid(row=1, column=3)
-        self.selected_label = tk.Label(self.root, text="sum of best", font=("courier", 12)).grid(row=2, column=3)
+        self.selected_stages_time.grid(row=1, column=2)
+        self.selected_label = tk.Label(self.root, text="sum of best", font=("courier", 12)).grid(row=2, column=2)
 
         self.total_time_label = tk.Label(self.root, text="total time", font=("courier", 12))
         self.total_time_label.grid(row=1, column=0)
 
         self.clear_button = tk.Button(self.root, text="Clear all", command=self.clear_selections)
-        self.clear_button.grid(row=4, column=1)
+        self.clear_button.grid(row=3, column=1)
 
         self.clear_user_input = tk.Button(self.root, text="reset search", command=self.clear_input)
-        self.clear_user_input.grid(row=9, column=1)
+        self.clear_user_input.grid(row=8, column=1)
 
-        self.text = tk.Label(self.root, text="use arrow keys or hjkl\nto add or remove stages").grid(row=5, column=1)
+        self.text = tk.Label(self.root, text="use arrow keys or hjkl\nto add or remove stages").grid(row=4, column=1)
 
         self.check_vars = {}
         self.labels: list[str] = App.all_locations
 
-        self.label_entry = tk.Label(self.root, text="search for stagename:").grid(row=7, column=1)
+        self.label_entry = tk.Label(self.root, text="search for stagename:").grid(row=6, column=1)
         self.entry = tk.Entry(root)
-        self.entry.grid(row=8, column=1)
+        self.entry.grid(row=7, column=1)
         self.entry.bind('<Return>', self.on_enter)
         self.entry.bind('<FocusIn>', self.on_entry_focus_in)
         self.entry.bind('<FocusOut>', self.on_entry_focus_out)
@@ -116,7 +113,7 @@ class App:
         self.results_listbox.activate(0)
 
         for i, label in enumerate(self.labels):
-            i += 4
+            i += 2
             var = tk.BooleanVar()
             self.check_vars[label] = var
             checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
@@ -125,7 +122,7 @@ class App:
         self.check_vars = {}
         self.labels: list[str] = App.all_groups
         for i, label in enumerate(self.labels):
-            i += 4
+            i += 2
             var = tk.BooleanVar()
             self.check_vars[label] = var
             checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
@@ -134,7 +131,7 @@ class App:
         self.check_vars = {}
         self.labels: list[str] = ["dry", "wet"]
         for i, label in enumerate(self.labels):
-             i += 4
+             i += 2
              var = tk.BooleanVar()
              self.check_vars[label] = var
              checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
@@ -143,7 +140,7 @@ class App:
         self.check_vars = {}
         self.labels: list[str] = ["forward", "reverse"]
         for i, label in enumerate(self.labels):
-             i += 4
+             i += 2
              var = tk.BooleanVar()
              self.check_vars[label] = var
              checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
