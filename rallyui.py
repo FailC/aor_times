@@ -1,28 +1,6 @@
-import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
 import rallydb as rb
-
-# changelog
-# create very important panic function
-
-# TODO
-# arrange stuff
-# move description to info box
-# daily/weekly counter
-# add function to get filepath or custom filename
-# maybe button to select file/filepath
-# button to write stages to file?
-
-# ideas
-# make some buttons on top for more info, maybe for file loading
-# make rallyui standalone?
-# if searching for stage, activate the right country
-
-
-def panic():
-    rb.eprint("ERROR: oh my god, run RUN!!!")
-    rb.sys.exit()
+import tkinter as tk
+from tkinter import ttk, messagebox
 
 class App:
     # every line in file
@@ -41,7 +19,7 @@ class App:
     for stages in all_stages:
         for stage in stages:
             stages_list.append(stage)
-    # tthis is the only way surely...
+    # this is the only way surely...
     user_input_stage = ""
 
     def __init__(self, root):
@@ -56,51 +34,98 @@ class App:
 
         self.root.config(menu=self.menu_bar)
 
-        self.frame = ttk.Frame(self.root, padding=10)
-        self.frame.grid()
-        #self.results_label = tk.Label(self.root, text="Results").grid(row=0, column=0)
-        self.results_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15,font=("courier", 12))
+        # Main frame
+        self.main_frame = ttk.Frame(self.root, padding=10)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Top frame for listboxes and buttons
+        self.top_frame = ttk.Frame(self.main_frame)
+        self.top_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+
+        # Results Listbox frame
+        self.results_frame = ttk.Frame(self.top_frame)
+        self.results_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=5)
+
+        self.results_listbox = tk.Listbox(self.results_frame, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
         self.results_listbox.bind('<FocusIn>', self.on_focus_in)
         self.results_listbox.bind('<FocusOut>', self.on_focus_out)
-        self.results_listbox.grid(row=0, column=0, padx=10, pady=5)
-        self.results_button = tk.Button(self.root, text='add>>', command=self.add_stage)
-        self.results_button.grid(row=1, column=1)
-        # right side
-        #self.selected_label = tk.Label(self.root, text="Selected Stages").grid(row=0, column=3)
-        self.selected_listbox = tk.Listbox(self.root, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
+        self.results_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Button frame for add/remove buttons
+        self.button_frame = ttk.Frame(self.top_frame)
+        self.button_frame.pack(side=tk.LEFT, padx=10, pady=5)
+
+        self.results_button = tk.Button(self.button_frame, text='add>>', command=self.add_stage)
+        self.results_button.pack(side=tk.TOP, pady=5, anchor='center')
+
+        self.selected_button = tk.Button(self.button_frame, text='<<remove', command=self.remove_stage)
+        self.selected_button.pack(side=tk.TOP, pady=5, anchor='center')
+
+        self.clear_button = tk.Button(self.button_frame, text="Clear all", command=self.clear_selections)
+        self.clear_button.pack(side=tk.TOP, pady=5)
+
+        # Selected Listbox frame
+        self.selected_frame = ttk.Frame(self.top_frame)
+        self.selected_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=5)
+
+        self.selected_listbox = tk.Listbox(self.selected_frame, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
         self.selected_listbox.bind('<FocusIn>', self.on_focus_in)
         self.selected_listbox.bind('<FocusOut>', self.on_focus_out)
-        self.selected_listbox.grid(row=0, column=2, padx=10, pady=5)
-        self.selected_button = tk.Button(self.root, text='<<remove', command=self.remove_stage)
-        self.selected_button.grid(row=2, column=1)
+        self.selected_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        #self.results_label = tk.Label(self.root, text="total time").grid(row=3, column=2)
-        self.selected_stages_time = tk.Label(self.root, text="total stages time", font=("courier", 12))
-        self.selected_stages_time.grid(row=1, column=2)
-        self.selected_label = tk.Label(self.root, text="sum of best", font=("courier", 12)).grid(row=2, column=2)
+        # Middle frame for total time labels
+        self.middle_frame = ttk.Frame(self.main_frame)
+        self.middle_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
 
-        self.total_time_label = tk.Label(self.root, text="total time", font=("courier", 12))
-        self.total_time_label.grid(row=1, column=0)
+        self.selected_stages_time_label = tk.Label(self.middle_frame, text="total time->", font=("courier", 12))
+        self.selected_stages_time_label.pack(side=tk.LEFT, padx=5)
 
-        self.clear_button = tk.Button(self.root, text="Clear all", command=self.clear_selections)
-        self.clear_button.grid(row=3, column=1)
+        self.total_time_label = tk.Label(self.middle_frame, text="total time", font=("courier", 12))
+        self.total_time_label.pack(side=tk.LEFT, padx=40)
 
-        self.clear_user_input = tk.Button(self.root, text="reset search", command=self.clear_input)
-        self.clear_user_input.grid(row=8, column=1)
+        self.sum_of_best_label = tk.Label(self.middle_frame, text="sum of best->", font=("courier", 12))
+        self.sum_of_best_label.pack(side=tk.LEFT, padx=0)
 
-        self.text = tk.Label(self.root, text="use arrow keys or hjkl\nto add or remove stages").grid(row=4, column=1)
+        self.selected_stages_time = tk.Label(self.middle_frame, text="sum of best", font=("courier", 12))
+        self.selected_stages_time.pack(side=tk.LEFT, padx=40)
 
-        self.check_vars = {}
-        self.labels: list[str] = App.all_locations
+        # Bottom frame for other controls
+        self.bottom_frame = ttk.Frame(self.main_frame)
+        self.bottom_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=5)
 
-        self.label_entry = tk.Label(self.root, text="search for stagename:").grid(row=6, column=1)
-        self.entry = tk.Entry(root)
-        self.entry.grid(row=7, column=1)
+        self.clear_user_input = tk.Button(self.bottom_frame, text="reset search", command=self.clear_input)
+        self.clear_user_input.pack(side=tk.LEFT, padx=10)
+
+        self.label_entry = tk.Label(self.bottom_frame, text="search for stagename:")
+        self.label_entry.pack(side=tk.LEFT, padx=10)
+
+        self.entry = tk.Entry(self.bottom_frame)
+        self.entry.pack(side=tk.LEFT, padx=10)
         self.entry.bind('<Return>', self.on_enter)
         self.entry.bind('<FocusIn>', self.on_entry_focus_in)
         self.entry.bind('<FocusOut>', self.on_entry_focus_out)
 
+        self.text = tk.Label(self.bottom_frame, text="use arrow keys or hjkl\nto add or remove stages")
+        self.text.pack(side=tk.LEFT, padx=10)
 
+        # Checkbutton frames
+        self.checkbutton_frames = []
+        for i in range(4):
+            frame = ttk.Frame(self.main_frame)
+            frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+            self.checkbutton_frames.append(frame)
+        # Checkbutton frames with borders
+        self.checkbutton_frames = []
+        labels = ["Locations", "Groups", "Weather", "Direction"]
+        for i in range(4):
+            frame = ttk.LabelFrame(self.main_frame, text=labels[i], padding=10)
+            frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+            self.checkbutton_frames.append(frame)
+
+        # Populate checkbutton frames
+        self.populate_checkbuttons()
+
+        # Key bindings
         root.bind('<Up>', self.navigate)
         root.bind('<Down>', self.navigate)
         root.bind('<Right>', self.add_stage)
@@ -112,50 +137,35 @@ class App:
         self.results_listbox.select_set(0)
         self.results_listbox.activate(0)
 
-        for i, label in enumerate(self.labels):
-            i += 2
-            var = tk.BooleanVar()
-            self.check_vars[label] = var
-            checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
-            checkbutton.grid(row=i, column=0, padx=10, pady=5, sticky="w")
-
-        self.check_vars = {}
-        self.labels: list[str] = App.all_groups
-        for i, label in enumerate(self.labels):
-            i += 2
-            var = tk.BooleanVar()
-            self.check_vars[label] = var
-            checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
-            checkbutton.grid(row=i, column=0, padx=110, pady=5, sticky="w")
-
-        self.check_vars = {}
-        self.labels: list[str] = ["dry", "wet"]
-        for i, label in enumerate(self.labels):
-             i += 2
-             var = tk.BooleanVar()
-             self.check_vars[label] = var
-             checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
-             checkbutton.grid(row=i, column=0, padx=210, pady=5, sticky="w")
-
-        self.check_vars = {}
-        self.labels: list[str] = ["forward", "reverse"]
-        for i, label in enumerate(self.labels):
-             i += 2
-             var = tk.BooleanVar()
-             self.check_vars[label] = var
-             checkbutton = tk.Checkbutton(root, text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
-             checkbutton.grid(row=i, column=0, padx=310, pady=5, sticky="w")
-
         self.update_all_stages()
 
+    def populate_checkbuttons(self):
+        categories = [
+            (App.all_locations, 0),
+            (App.all_groups, 1),
+            (["dry", "wet"], 2),
+            (["forward", "reverse"], 3)
+        ]
+
+        for labels, index in categories:
+            self.check_vars = {}
+            for i, label in enumerate(labels):
+                var = tk.BooleanVar()
+                self.check_vars[label] = var
+                checkbutton = tk.Checkbutton(self.checkbutton_frames[index], text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
+                checkbutton.pack(side=tk.LEFT, padx=10, pady=5)
+
     def on_focus_in(self, event):
-            self.bind_navigation_keys()
+        self.bind_navigation_keys()
+
     def on_focus_out(self, event):
-            self.unbind_navigation_keys()
+        self.unbind_navigation_keys()
+
     def on_entry_focus_in(self, event):
-            self.unbind_navigation_keys()
+        self.unbind_navigation_keys()
+
     def on_entry_focus_out(self, event):
-            self.bind_navigation_keys()
+        self.bind_navigation_keys()
 
     def bind_navigation_keys(self):
         self.root.bind('<Up>', self.navigate)
@@ -164,8 +174,8 @@ class App:
         self.root.bind('j', self.navigate)
         self.root.bind('k', self.navigate)
         self.root.bind('l', self.navigate)
-        self.root.bind('<Right>', self.add_stage)  # Bind the Right arrow key to add_stage
-        self.root.bind('<Left>', self.remove_stage)  # Bind the Right arrow key to add_stage
+        self.root.bind('<Right>', self.add_stage)
+        self.root.bind('<Left>', self.remove_stage)
 
     def unbind_navigation_keys(self):
         self.root.unbind('<Up>')
@@ -208,6 +218,7 @@ class App:
                 listbox.select_set(current_index + 1)
                 listbox.activate(current_index + 1)
                 listbox.see(current_index + 1)
+
     def show_help(self):
         messagebox.showinfo("Help", "Add search options with the boxes,\nadd stages to the right window with arrow keyes or with the move>> button\nThe search function only works if the corresponding country is selected.")
 
@@ -257,20 +268,6 @@ class App:
                 App.selected_objects.append(App.results_vector[index])
             self.update_stage_time()
 
-    # delete this..
-    def add_stage_test(self):
-        # todo check both list,
-        focused_widget = self.root.focus_get()
-        selected_idx = self.results_listbox.get(tk.ACTIVE)
-        try:
-            index = self.results_listbox.curselection()[0]
-            if selected_idx:
-                self.selected_listbox.insert(tk.END, selected_idx)
-                App.selected_objects.append(App.results_vector[index])
-            self.update_stage_time()
-        except IndexError:
-            rb.eprint("debug: nothing to add")
-
     def remove_stage(self, event=None):
         selected_idx = self.selected_listbox.curselection()
         try:
@@ -282,7 +279,7 @@ class App:
             if index <= 0:
                 self.selected_listbox.select_set(0)
             else:
-                self.selected_listbox.select_set(index-1)
+                self.selected_listbox.select_set(index - 1)
                 self.selected_listbox.activate(0)
         except IndexError:
             rb.eprint("debug: nothing to remove")
@@ -294,7 +291,7 @@ class App:
 
     def update_stage_time(self):
         total_time = 0
-        hours, minutes, seconds, ms = 0,0,0,0
+        hours, minutes, seconds, ms = 0, 0, 0, 0
         for stage in App.selected_objects:
             if stage.time_ms >= 356400000:
                 continue
@@ -304,12 +301,11 @@ class App:
         except TypeError:
             print("error converting number in Leaderboards file to time")
         total_time_str = f"{hours}:{minutes:02d}:{seconds:02d}.{ms:03d}"
-        #print(f"{hours}:{minutes}:{seconds}.{ms}")
         self.selected_stages_time.config(text=total_time_str)
 
     def update_total_time(self):
         total_time = 0
-        hours, minutes, seconds, ms = 0,0,0,0
+        hours, minutes, seconds, ms = 0, 0, 0, 0
         for stage in self.results_vector:
             total_time += stage.time_ms
             try:
@@ -322,9 +318,7 @@ class App:
     def toggle_action(self, var, label):
         if var.get():
             App.selected_options_list.append(label)
-            #print(f"{label} enabled")
         else:
-            #print(f"{label} disabled")
             App.selected_options_list.remove(label)
         self.update_all_stages()
         self.results_listbox.select_set(0)
@@ -335,27 +329,18 @@ class App:
         user_list: list[str] = []
         user_list.append(user_input)
         print(f"user: {user_input}")
-        #self.entry.delete(0, tk.END)
         try:
-            #App.stages_list.clear()
             search_results: list[str] = rb.find_stage(user_list)
-            #App.stages_list.append(search_results[0])
             App.user_input_stage = search_results[0]
             print(f"search: {search_results}")
             self.update_all_stages()
-            # add a clear button
         except SystemError:
             pass
-            #rb.eprint("ERROR: stage not found?")
 
     def clear_input(self):
         self.entry.delete(0, tk.END)
         App.user_input_stage = ""
         self.update_all_stages()
-    # find stage
-    # rb.all_stages
-    # rb.find_stage()
-
 
 def main():
     root = tk.Tk()
