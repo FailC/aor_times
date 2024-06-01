@@ -1,15 +1,26 @@
 import rallydb as rb
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
+
+# CHANGELOG
+# add filedialog for custom filepath
+#
+# TODO
+# daily/weekly counter
+# button to output stages to file?
+#
+# make rallyui standalone?
+# if searching for stage, activate the right country
+
 
 class App:
     # every line in file
     stages_from_file: list[rb.Stage] = []
-    # every selected object left side
-    selected_objects: list[rb.Stage] = []
-    # same but the objects
-    selected_options_list: list[str] = []
-    # results list, left side, the objects
+    # every selected object right side?
+    selected_stages_str: list[rb.Stage] = []
+    # same but objects
+    selected_stages_obj: list[str] = []
+    # results list, left side, the objects, after toggle groups etc.
     results_vector: list[rb.Stage] = []
 
     all_locations: list[str] = list(rb.Stage.location_stage_names.keys())
@@ -23,15 +34,18 @@ class App:
     user_input_stage = ""
 
     def __init__(self, root):
+        self.filepath = ""
         self.root = root
         self.root.title("RallyUI")
         #root.geometry("800x600")
         self.menu_bar = tk.Menu(self.root)
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.file_menu.add_command(label="Open", command=self.get_file_path)
         self.file_menu.add_command(label="Help", command=self.show_help)
         self.file_menu.add_command(label="Exit", command=self.root.quit)
-        self.menu_bar.add_cascade(label="Options", menu=self.file_menu)
 
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        #self.menu_bar.add_cascade(label="Options", menu=self.options_menu)
         self.root.config(menu=self.menu_bar)
 
         # Main frame
@@ -222,9 +236,20 @@ class App:
     def show_help(self):
         messagebox.showinfo("Help", "Add search options with the boxes,\nadd stages to the right window with arrow keyes or with the move>> button\nThe search function only works if the corresponding country is selected.")
 
+    def get_file_path(self):
+        self.filepath = filedialog.askopenfilename()
+        print(f"trying to open file: {self.filepath}")
+        # reset all arrays
+        App.stages_from_file.clear()
+        App.selected_stages_str.clear()
+        App.selected_stages_obj.clear()
+        App.results_vector.clear()
+        self.read_file()
 
     def read_file(self):
-        with open("Leaderboards.txt", 'r') as file:
+        if not self.filepath:
+            self.filepath = "Leaderboards.txt"
+        with open(self.filepath ,'r') as file:
             lines = file.readlines()
         for line in lines:
             if "daily" in line or "weekly" in line:
@@ -233,16 +258,17 @@ class App:
                 App.stages_from_file.append(rb.Stage(line))
             except TypeError:
                 continue
+        self.update_all_stages()
 
     def update_all_stages(self):
         # left side
         self.results_listbox.delete(0, tk.END)
         self.results_vector.clear()
         for object in App.stages_from_file:
-            if (object.location in App.selected_options_list and
-                object.group in App.selected_options_list and
-                object.weather in App.selected_options_list and
-                object.direction in App.selected_options_list and
+            if (object.location in App.selected_stages_obj and
+                object.group in App.selected_stages_obj and
+                object.weather in App.selected_stages_obj and
+                object.direction in App.selected_stages_obj and
                 (not App.user_input_stage or App.user_input_stage in object.stage)
             ):
 
@@ -262,10 +288,13 @@ class App:
         focused_widget = self.root.focus_get()
         if focused_widget == self.results_listbox:
             selected_idx = self.results_listbox.get(tk.ACTIVE)
-            index = self.results_listbox.curselection()[0]
+            try:
+                index = self.results_listbox.curselection()[0]
+            except IndexError:
+                rb.eprint("DEBUG: nothing to select")
             if selected_idx:
                 self.selected_listbox.insert(tk.END, selected_idx)
-                App.selected_objects.append(App.results_vector[index])
+                App.selected_stages_str.append(App.results_vector[index])
             self.update_stage_time()
 
     def remove_stage(self, event=None):
@@ -274,7 +303,7 @@ class App:
             index = self.selected_listbox.curselection()[0]
             if selected_idx:
                 self.selected_listbox.delete(selected_idx)
-                App.selected_objects.pop(index)
+                App.selected_stages_str.pop(index)
             self.update_stage_time()
             if index <= 0:
                 self.selected_listbox.select_set(0)
@@ -282,17 +311,17 @@ class App:
                 self.selected_listbox.select_set(index - 1)
                 self.selected_listbox.activate(0)
         except IndexError:
-            rb.eprint("debug: nothing to remove")
+            rb.eprint("DEBUG: nothing to remove")
 
     def clear_selections(self):
         self.selected_listbox.delete(0, tk.END)
-        App.selected_objects.clear()
+        App.selected_stages_str.clear()
         self.update_stage_time()
 
     def update_stage_time(self):
         total_time = 0
         hours, minutes, seconds, ms = 0, 0, 0, 0
-        for stage in App.selected_objects:
+        for stage in App.selected_stages_str:
             if stage.time_ms >= 356400000:
                 continue
             total_time += stage.time_ms
@@ -317,9 +346,9 @@ class App:
 
     def toggle_action(self, var, label):
         if var.get():
-            App.selected_options_list.append(label)
+            App.selected_stages_obj.append(label)
         else:
-            App.selected_options_list.remove(label)
+            App.selected_stages_obj.remove(label)
         self.update_all_stages()
         self.results_listbox.select_set(0)
         self.results_listbox.activate(0)
