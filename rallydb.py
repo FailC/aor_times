@@ -3,7 +3,7 @@
 #
 # early access version
 #
-# CHANGELOG:
+# CHANGELOG: add stage_number
 #
 # TODO:
 # exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
@@ -118,7 +118,8 @@ class Stage:
         parts = line.split(":")
         stage = parts[0].split("_")
         self.location: str = stage[0].lower()
-        self.stage: str = self.get_stage_name(int(stage[2]))
+        self.stage_number: int = int(stage[2])
+        self.stage: str = self.get_stage_name(self.stage_number)
         self.direction: str = stage[3].lower()
         self.weather: str = stage[4].lower()
         self.group: str = stage[5].lower()
@@ -160,7 +161,7 @@ def find_stage(stage_name: list[str]) -> list[str]:
 
 
 def main() -> None:
-    total_time:int  = 0
+    total_time: int  = 0
     debug_week_counter: int = 0
     filename: str = ""
     parser = argparse.ArgumentParser(description="rally car goes vrooaaam",formatter_class=CustomFormatter)

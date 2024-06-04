@@ -3,24 +3,32 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
 # CHANGELOG
-# add filedialog for custom filepath
+# change variable names
+# fix some warnings
+# ability to save the selected stages to the SaveSlots.cfg file
+# add radiobuttons for selecting weather for custom rally
 #
 # TODO
+# radiobuttons override the stage object weather, but kinda difficult to show inside the listbox, mabye do another window, only shows for one stage at the time? kinda shit
+# exporting custom rally works
 # daily/weekly counter
 # button to output stages to file?
 #
 # make rallyui standalone?
 # if searching for stage, activate the right country
+# don't trust comments
 
+# integrate some kind of creating and loading custom rally from SaveSlots.cfg?
+# add weather, while highlighting a stage, select weather underneath in a checkbox
 
 class App:
     # every line in file
     stages_from_file: list[rb.Stage] = []
-    # every selected object right side?
-    selected_stages_str: list[rb.Stage] = []
-    # same but objects
-    selected_stages_obj: list[str] = []
-    # results list, left side, the objects, after toggle groups etc.
+    # every selected object right window
+    selected_stages_obj: list[rb.Stage] = []
+    # used in if statement
+    selected_stages: list[str] = []
+    # results list, left side, objects
     results_vector: list[rb.Stage] = []
 
     all_locations: list[str] = list(rb.Stage.location_stage_names.keys())
@@ -37,15 +45,16 @@ class App:
         self.filepath = ""
         self.root = root
         self.root.title("RallyUI")
-        #root.geometry("800x600")
+        #root.geometry("800x600") ??
         self.menu_bar = tk.Menu(self.root)
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.file_menu.add_command(label="Open", command=self.get_file_path)
-        self.file_menu.add_command(label="Help", command=self.show_help)
+        self.file_menu.add_command(label="Load as custom rally", command=self.load_custom_rally)
+        self.file_menu.add_command(label="Export as custom rally", command=self.export_custom_rally)
+        self.file_menu.add_command(label="Help/About", command=self.show_help)
         self.file_menu.add_command(label="Exit", command=self.root.quit)
 
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
-        #self.menu_bar.add_cascade(label="Options", menu=self.options_menu)
         self.root.config(menu=self.menu_bar)
 
         # Main frame
@@ -102,6 +111,18 @@ class App:
 
         self.selected_stages_time = tk.Label(self.middle_frame, text="sum of best", font=("courier", 12))
         self.selected_stages_time.pack(side=tk.LEFT, padx=40)
+
+        # radiobuttons
+
+        # Middle frame for radiobuttons
+        #self.middle_frame = ttk.Frame(self.main_frame)
+        #self.middle_frame.pack(side=tk.LEFT, padx=10, pady=5)
+        self.radio_var = tk.StringVar(value="morning") 
+        radio_buttons = ["morning", "afternoon", "sunset", "rain", "fog", "night"]
+        for option in radio_buttons:
+            radio_button = ttk.Radiobutton(self.middle_frame, text=option, variable=self.radio_var, value=option)
+            radio_button.pack(side=tk.LEFT, anchor='w', pady=2)
+
 
         # Bottom frame for other controls
         self.bottom_frame = ttk.Frame(self.main_frame)
@@ -163,7 +184,7 @@ class App:
 
         for labels, index in categories:
             self.check_vars = {}
-            for i, label in enumerate(labels):
+            for label in labels:
                 var = tk.BooleanVar()
                 self.check_vars[label] = var
                 checkbutton = tk.Checkbutton(self.checkbutton_frames[index], text=label, variable=var, command=lambda var=var, label=label: self.toggle_action(var, label))
@@ -184,22 +205,22 @@ class App:
     def bind_navigation_keys(self):
         self.root.bind('<Up>', self.navigate)
         self.root.bind('<Down>', self.navigate)
+        self.root.bind('<Right>', self.add_stage)
+        self.root.bind('<Left>', self.remove_stage)
         self.root.bind('h', self.navigate)
         self.root.bind('j', self.navigate)
         self.root.bind('k', self.navigate)
         self.root.bind('l', self.navigate)
-        self.root.bind('<Right>', self.add_stage)
-        self.root.bind('<Left>', self.remove_stage)
 
     def unbind_navigation_keys(self):
         self.root.unbind('<Up>')
         self.root.unbind('<Down>')
+        self.root.unbind('<Right>')
+        self.root.unbind('<Left>')
         self.root.unbind('h')
         self.root.unbind('j')
         self.root.unbind('k')
         self.root.unbind('l')
-        self.root.unbind('<Right>')
-        self.root.unbind('<Left>')
 
     def navigate(self, event):
         focused_widget = self.root.focus_get()
@@ -234,6 +255,8 @@ class App:
                 listbox.see(current_index + 1)
 
     def show_help(self):
+        # TODO
+        # better help / instruction message
         messagebox.showinfo("Help", "Add search options with the boxes,\nadd stages to the right window with arrow keyes or with the move>> button\nThe search function only works if the corresponding country is selected.")
 
     def get_file_path(self):
@@ -241,8 +264,8 @@ class App:
         print(f"trying to open file: {self.filepath}")
         # reset all arrays
         App.stages_from_file.clear()
-        App.selected_stages_str.clear()
         App.selected_stages_obj.clear()
+        App.selected_stages.clear()
         App.results_vector.clear()
         self.read_file()
 
@@ -260,23 +283,74 @@ class App:
                 continue
         self.update_all_stages()
 
+    # do menu for loaded custom rally
+    # select the custom rally to configure -> save again
+    # maybe do only save to custom rally?
+    def load_custom_rally(self) -> list[str]:
+        with open("SaveSlots.cfg", "r") as file:
+            lines = file.readlines()
+        return lines
+
+    def export_custom_rally(self):
+        # TODO
+        # check if only one country is selected
+
+        custom_rallies = self.load_custom_rally()
+
+        string = ""
+        print("exporting custom rally..")
+        try:
+            rb.eprint("getting location..")
+            location = App.selected_stages_obj[0].location
+        except IndexError:
+            rb.eprint("IndexError..aborting")
+            return
+        string += f"{location.upper()}|"
+        for stage in App.selected_stages_obj:
+            string += f"{stage.stage_number}.{stage.weather},"
+        string = string[:-1]
+        string += "\r"
+        # write this to file
+        print("writing to file..")
+        print(string)
+
+        count = 0
+        with open("SaveSlots.cfg", "w") as file:
+            for line in custom_rallies:
+                if line in ["\n", "\r\n"]:
+                    continue
+                file.write(line)
+                count += 1
+            print("count after custom rally file: ", count)
+            if count < 10:
+                file.write(string)
+                count += 1
+                print(f"count after new rally: {count}")
+                while count <= 10:
+                    file.write("\n")
+                    count += 1
+            else:
+                print("already 10 custom rallies..aborting")
+                return
+
+
     def update_all_stages(self):
         # left side
         self.results_listbox.delete(0, tk.END)
         self.results_vector.clear()
         for object in App.stages_from_file:
-            if (object.location in App.selected_stages_obj and
-                object.group in App.selected_stages_obj and
-                object.weather in App.selected_stages_obj and
-                object.direction in App.selected_stages_obj and
+            if (object.location in App.selected_stages and
+                object.group in App.selected_stages and
+                object.weather in App.selected_stages and
+                object.direction in App.selected_stages and
                 (not App.user_input_stage or App.user_input_stage in object.stage)
             ):
 
                 time = object.time.get_time()
                 string: str = f"{object.location:<10} {object.stage:<17} {object.group:<7}{object.direction:<3} {object.weather:<3} {time}"
+                # <3 :)
                 self.results_listbox.insert(tk.END, string)
                 self.results_vector.append(object)
-                #print(f"{object.time.get_time()} {object.stage}")
             else:
                 continue
         self.update_total_time()
@@ -284,7 +358,10 @@ class App:
         self.results_listbox.select_set(0)
         self.results_listbox.activate(0)
 
+    # some buttons need event
     def add_stage(self, event=None):
+        index = 0
+        #print(self.radio_var.get())
         focused_widget = self.root.focus_get()
         if focused_widget == self.results_listbox:
             selected_idx = self.results_listbox.get(tk.ACTIVE)
@@ -294,7 +371,9 @@ class App:
                 rb.eprint("DEBUG: nothing to select")
             if selected_idx:
                 self.selected_listbox.insert(tk.END, selected_idx)
-                App.selected_stages_str.append(App.results_vector[index])
+                App.results_vector[index].weather = self.radio_var.get()
+                App.selected_stages_obj.append(App.results_vector[index])
+                #print(App.results_vector[index].weather)
             self.update_stage_time()
 
     def remove_stage(self, event=None):
@@ -303,7 +382,7 @@ class App:
             index = self.selected_listbox.curselection()[0]
             if selected_idx:
                 self.selected_listbox.delete(selected_idx)
-                App.selected_stages_str.pop(index)
+                App.selected_stages_obj.pop(index)
             self.update_stage_time()
             if index <= 0:
                 self.selected_listbox.select_set(0)
@@ -315,13 +394,13 @@ class App:
 
     def clear_selections(self):
         self.selected_listbox.delete(0, tk.END)
-        App.selected_stages_str.clear()
+        App.selected_stages_obj.clear()
         self.update_stage_time()
 
     def update_stage_time(self):
         total_time = 0
         hours, minutes, seconds, ms = 0, 0, 0, 0
-        for stage in App.selected_stages_str:
+        for stage in App.selected_stages_obj:
             if stage.time_ms >= 356400000:
                 continue
             total_time += stage.time_ms
@@ -346,9 +425,9 @@ class App:
 
     def toggle_action(self, var, label):
         if var.get():
-            App.selected_stages_obj.append(label)
+            App.selected_stages.append(label)
         else:
-            App.selected_stages_obj.remove(label)
+            App.selected_stages.remove(label)
         self.update_all_stages()
         self.results_listbox.select_set(0)
         self.results_listbox.activate(0)
