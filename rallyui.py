@@ -7,6 +7,7 @@ from tkinter import ttk, messagebox, filedialog
 # fix some warnings
 # ability to save the selected stages to the SaveSlots.cfg file
 # add radiobuttons for selecting weather for custom rally
+# weather gets printed to the listbox
 #
 # TODO
 # radiobuttons override the stage object weather, but kinda difficult to show inside the listbox, mabye do another window, only shows for one stage at the time? kinda shit
@@ -46,6 +47,7 @@ class App:
         self.root = root
         self.root.title("RallyUI")
         #root.geometry("800x600") ??
+        self.font = ("courier", 11)
         self.menu_bar = tk.Menu(self.root)
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.file_menu.add_command(label="Open", command=self.get_file_path)
@@ -69,7 +71,7 @@ class App:
         self.results_frame = ttk.Frame(self.top_frame)
         self.results_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=5)
 
-        self.results_listbox = tk.Listbox(self.results_frame, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
+        self.results_listbox = tk.Listbox(self.results_frame, selectmode=tk.SINGLE, width=60, height=15, font=self.font)
         self.results_listbox.bind('<FocusIn>', self.on_focus_in)
         self.results_listbox.bind('<FocusOut>', self.on_focus_out)
         self.results_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -91,7 +93,7 @@ class App:
         self.selected_frame = ttk.Frame(self.top_frame)
         self.selected_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=5)
 
-        self.selected_listbox = tk.Listbox(self.selected_frame, selectmode=tk.SINGLE, width=60, height=15, font=("courier", 12))
+        self.selected_listbox = tk.Listbox(self.selected_frame, selectmode=tk.SINGLE, width=65, height=15, font=self.font)
         self.selected_listbox.bind('<FocusIn>', self.on_focus_in)
         self.selected_listbox.bind('<FocusOut>', self.on_focus_out)
         self.selected_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -100,16 +102,16 @@ class App:
         self.middle_frame = ttk.Frame(self.main_frame)
         self.middle_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
 
-        self.selected_stages_time_label = tk.Label(self.middle_frame, text="total time->", font=("courier", 12))
+        self.selected_stages_time_label = tk.Label(self.middle_frame, text="total time->", font=self.font)
         self.selected_stages_time_label.pack(side=tk.LEFT, padx=5)
 
-        self.total_time_label = tk.Label(self.middle_frame, text="total time", font=("courier", 12))
+        self.total_time_label = tk.Label(self.middle_frame, text="total time", font=self.font)
         self.total_time_label.pack(side=tk.LEFT, padx=40)
 
-        self.sum_of_best_label = tk.Label(self.middle_frame, text="sum of best->", font=("courier", 12))
+        self.sum_of_best_label = tk.Label(self.middle_frame, text="sum of best->", font=self.font)
         self.sum_of_best_label.pack(side=tk.LEFT, padx=0)
 
-        self.selected_stages_time = tk.Label(self.middle_frame, text="sum of best", font=("courier", 12))
+        self.selected_stages_time = tk.Label(self.middle_frame, text="sum of best", font=self.font)
         self.selected_stages_time.pack(side=tk.LEFT, padx=40)
 
         # radiobuttons
@@ -296,14 +298,13 @@ class App:
         # check if only one country is selected
 
         custom_rallies = self.load_custom_rally()
-
         string = ""
         print("exporting custom rally..")
         try:
-            rb.eprint("getting location..")
+            #rb.eprint("getting location..")
             location = App.selected_stages_obj[0].location
         except IndexError:
-            rb.eprint("IndexError..aborting")
+            rb.eprint("WARNING: no stage selected")
             return
         string += f"{location.upper()}|"
         for stage in App.selected_stages_obj:
@@ -311,7 +312,7 @@ class App:
         string = string[:-1]
         string += "\r"
         # write this to file
-        print("writing to file..")
+        print("writing to file..", end='')
         print(string)
 
         count = 0
@@ -321,17 +322,16 @@ class App:
                     continue
                 file.write(line)
                 count += 1
-            print("count after custom rally file: ", count)
             if count < 10:
                 file.write(string)
                 count += 1
-                print(f"count after new rally: {count}")
                 while count <= 10:
                     file.write("\n")
                     count += 1
             else:
-                print("already 10 custom rallies..aborting")
+                print("WARNING: already 10 custom rallies in file")
                 return
+            rb.eprint("done")
 
 
     def update_all_stages(self):
@@ -347,7 +347,7 @@ class App:
             ):
 
                 time = object.time.get_time()
-                string: str = f"{object.location:<10} {object.stage:<17} {object.group:<7}{object.direction:<3} {object.weather:<3} {time}"
+                string: str = f"{object.location:<9} {object.stage:<16} {object.group:<7}{object.direction:<3} {object.weather:<3} {time}"
                 # <3 :)
                 self.results_listbox.insert(tk.END, string)
                 self.results_vector.append(object)
@@ -370,7 +370,8 @@ class App:
             except IndexError:
                 rb.eprint("DEBUG: nothing to select")
             if selected_idx:
-                self.selected_listbox.insert(tk.END, selected_idx)
+                string = f"{selected_idx} -{self.radio_var.get()}"
+                self.selected_listbox.insert(tk.END, string)
                 App.results_vector[index].weather = self.radio_var.get()
                 App.selected_stages_obj.append(App.results_vector[index])
                 #print(App.results_vector[index].weather)
