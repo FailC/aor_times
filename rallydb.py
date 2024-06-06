@@ -3,9 +3,10 @@
 #
 # early access version
 #
-# CHANGELOG:
+# CHANGELOG: add stage_number
 #
 # TODO:
+# change time function to use divmod()
 # exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
 # add daily weekly filter - seperate program?
 #
@@ -20,8 +21,7 @@
 import sys
 import argparse
 import difflib
-
-# for printing to stderr, for >>
+# for printing to stderr, doesn't get written to a file with >>
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -80,6 +80,16 @@ class Time:
             return
         print(f"{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}")
 
+    def get_time(self, hours=False) -> str:
+        string: str = ""
+        if self.is_dnf:
+             return "DNF"
+        if hours == True:
+             string = f"{self.hours}:{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}"
+             return string
+        return f"{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}"
+
+
 class Stage:
     stage_vec = []
     location_stage_names = {
@@ -109,7 +119,8 @@ class Stage:
         parts = line.split(":")
         stage = parts[0].split("_")
         self.location: str = stage[0].lower()
-        self.stage: str = self.get_stage_name(int(stage[2]))
+        self.stage_number: int = int(stage[2])
+        self.stage: str = self.get_stage_name(self.stage_number)
         self.direction: str = stage[3].lower()
         self.weather: str = stage[4].lower()
         self.group: str = stage[5].lower()
@@ -145,17 +156,29 @@ def find_stage(stage_name: list[str]) -> list[str]:
                stage_list.append(suggestions[0])
            else:
                eprint(f"ERROR: Stage '{stage_name}' not found")
-               exit()
+               raise SystemError
+               #exit()
     return stage_list
 
 
+def print_ascii():
+    print(r"""
+        _ _           _ _
+_ __ __ _| | |_   _  __| | |__
+| '__/ _` | | | | | |/ _` | '_ \
+| | | (_| | | | |_| | (_| | |_) |
+|_|  \__,_|_|_|\__, |\__,_|_.__/
+            |___/
+    """)
+
+
 def main() -> None:
-    total_time:int  = 0
+    total_time: int  = 0
     debug_week_counter: int = 0
     filename: str = ""
     parser = argparse.ArgumentParser(description="rally car goes vrooaaam",formatter_class=CustomFormatter)
-    parser.add_argument( '-l','--location', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
-    parser.add_argument( '-g','--group', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
+    parser.add_argument( '-l','--location', nargs='+', choices=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"], default=["finland", "japan" ,"sardinia" ,"norway", "germany", "kenya", "indonesia", "australia"])
+    parser.add_argument( '-g','--group', nargs='+', choices=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "monkey", "dakar", "logging"], default=["60s", "70s", "80s", "groupb", "groups", "groupa", "vans", "dakar", "monkey", "logging"])
     parser.add_argument('-c', '--car', action='store_true', help='print out the used car')
     parser.add_argument('-s', '--stage', nargs='+', default=None, help='search for stage name, will provide the best match, enclose long names in quotation marks: "nulla nulla"')
     parser.add_argument( '-d','--direction', choices=["forward", "reverse"], default=["forward", "reverse"])
@@ -164,10 +187,15 @@ def main() -> None:
     parser.add_argument('-x', '--onlytime', action='store_true', help='only print the total time of selected stages')
     parser.add_argument('-a', '--argprint', action='store_true', help='print headlines containing provided arguments, for easy overview')
     parser.add_argument('-f', '--filename', default="Leaderboards.txt",help='provide custom file name')
+    parser.add_argument('-r', '--rally', action='store_true', help="print cool ascii art")
     args = parser.parse_args()
 
     # add arguments to ignore with --argprint:
     ignore_user_args = ["onlytime", "argprint", "totaltime", "car"]
+
+    if args.rally:
+        print_ascii()
+        sys.exit()
 
     if args.filename:
         filename = args.filename
@@ -182,10 +210,13 @@ def main() -> None:
         eprint(f"ERROR:  {args.filename}  file not found")
         eprint("try: ", end='')
         eprint("file needs to be in the same directory as rallydb.py")
-        exit()
+        sys.exit()
 
     if args.stage:
-        args.stage = find_stage(args.stage)
+        try:
+            args.stage = find_stage(args.stage)
+        except SystemError:
+            sys.exit()
 
     # getting the user provided arguments
     if args.argprint:
@@ -219,7 +250,8 @@ def main() -> None:
     if args.totaltime:
         new = Time(total_time)
         print(f"----------   ", end='')
-        new.print_time(hours=True)
+        print(new.get_time())
+        #new.print_time(hours=True)
 
 
 if __name__ == "__main__":
