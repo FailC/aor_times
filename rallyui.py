@@ -3,21 +3,15 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
 # CHANGELOG
-# change variable names
-# fix some warnings
-# ability to save the selected stages to the SaveSlots.cfg file
-# add radiobuttons for selecting weather for custom rally
-# weather gets printed to the listbox
+# better error messages with messagebox
 #
-# TODO
-# radiobuttons override the stage object weather, but kinda difficult to show inside the listbox, mabye do another window, only shows for one stage at the time? kinda shit
-# exporting custom rally works
+# TODO:
+# ability to delete custom rally? - read in file, add locations to left window, add stages to right box after selected
+# read in custom rally file - problem of multiple rallies in file, how to show?
 # daily/weekly counter
-# button to output stages to file?
 #
 # make rallyui standalone?
 # if searching for stage, activate the right country
-# don't trust comments
 
 # integrate some kind of creating and loading custom rally from SaveSlots.cfg?
 # add weather, while highlighting a stage, select weather underneath in a checkbox
@@ -299,12 +293,14 @@ class App:
 
         custom_rallies = self.load_custom_rally()
         string = ""
-        print("exporting custom rally..")
+        #rb.eprint("exporting custom rally..", end='')
         try:
             #rb.eprint("getting location..")
             location = App.selected_stages_obj[0].location
         except IndexError:
             rb.eprint("WARNING: no stage selected")
+            messagebox.showinfo("export custom rally", "no stage selected")
+
             return
         string += f"{location.upper()}|"
         for stage in App.selected_stages_obj:
@@ -312,9 +308,8 @@ class App:
         string = string[:-1]
         string += "\r"
         # write this to file
-        print("writing to file..", end='')
-        print(string)
-
+        rb.eprint("writing to file..", end='')
+        #print(string)
         count = 0
         with open("SaveSlots.cfg", "w") as file:
             for line in custom_rallies:
@@ -326,12 +321,16 @@ class App:
                 file.write(string)
                 count += 1
                 while count <= 10:
-                    file.write("\n")
+                    file.write("\r\n")
                     count += 1
             else:
-                print("WARNING: already 10 custom rallies in file")
+                rb.eprint("error")
+                rb.eprint("WARNING: already 10 custom rallies in file")
+                # TODO: do error message here!
+                messagebox.showinfo("export custom rally", "All custom rally slots used!")
                 return
             rb.eprint("done")
+        #print()
 
 
     def update_all_stages(self):
