@@ -6,6 +6,7 @@
 # CHANGELOG: add stage_number
 #
 # TODO:
+# change time function to use divmod()
 # exclude groups or locations? -> better: --groups and --location should take multiple arguemnts
 # add daily weekly filter - seperate program?
 #
@@ -20,7 +21,7 @@
 import sys
 import argparse
 import difflib
-# for printing to stderr, for >>
+# for printing to stderr, doesn't get written to a file with >>
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -160,6 +161,17 @@ def find_stage(stage_name: list[str]) -> list[str]:
     return stage_list
 
 
+def print_ascii():
+    print(r"""
+        _ _           _ _
+_ __ __ _| | |_   _  __| | |__
+| '__/ _` | | | | | |/ _` | '_ \
+| | | (_| | | | |_| | (_| | |_) |
+|_|  \__,_|_|_|\__, |\__,_|_.__/
+            |___/
+    """)
+
+
 def main() -> None:
     total_time: int  = 0
     debug_week_counter: int = 0
@@ -175,10 +187,15 @@ def main() -> None:
     parser.add_argument('-x', '--onlytime', action='store_true', help='only print the total time of selected stages')
     parser.add_argument('-a', '--argprint', action='store_true', help='print headlines containing provided arguments, for easy overview')
     parser.add_argument('-f', '--filename', default="Leaderboards.txt",help='provide custom file name')
+    parser.add_argument('-r', '--rally', action='store_true', help="print cool ascii art")
     args = parser.parse_args()
 
     # add arguments to ignore with --argprint:
     ignore_user_args = ["onlytime", "argprint", "totaltime", "car"]
+
+    if args.rally:
+        print_ascii()
+        sys.exit()
 
     if args.filename:
         filename = args.filename
