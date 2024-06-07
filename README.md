@@ -24,15 +24,17 @@ show help page with all options, every argument has a short and ""--long" versio
 ```
 python3 rallydb.py --help
 ```
-
 filter search for  finland, Group A, only reverse stages
 ```
 python3 rallydb.py -l finland -g groupa -d reverse
 ```
 search for a single stage with -s (returns the closest match), print out the combined times with -t / --totaltime
-
 ```
 python3 rallydb.py -g groupb -s haaparjarvi --weather dry --totaltime
+```
+you can override which file the script uses with the -f argument
+```
+python3 rallydb.py -f myleaderboard.txt
 ```
 
 ### rallyui.py
