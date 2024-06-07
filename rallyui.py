@@ -1,13 +1,16 @@
 import rallydb as rb
+import os
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
 # CHANGELOG
-# better error messages with messagebox
+# add file dialog for custom rally
+#
 #
 # TODO:
-# ability to delete custom rally? - read in file, add locations to left window, add stages to right box after selected
 # read in custom rally file - problem of multiple rallies in file, how to show?
+# ability to delete custom rally - read in file, add locations to left window, add stages to right box after selected
+# maybe toggle between rallydb and custom rally functionality
 # daily/weekly counter
 #
 # make rallyui standalone?
@@ -30,14 +33,16 @@ class App:
     all_groups: list[str] = list(rb.Stage.car_names.keys())
     all_stages = list(rb.Stage.location_stage_names.values())
     stages_list = []
-    for stages in all_stages:
-        for stage in stages:
-            stages_list.append(stage)
-    # this is the only way surely...
+    # I LOVE LIST COMPREHENSIONS
+    stages_list = [stage for stages in all_stages for stage in stages]
+
     user_input_stage = ""
 
     def __init__(self, root):
+        self.is_custom = False # testing stuff
         self.filepath = ""
+        self.filepath_custom_rally = ""
+        #self.custom_rally_path = ""
         self.root = root
         self.root.title("RallyUI")
         #root.geometry("800x600") ??
@@ -45,12 +50,18 @@ class App:
         self.menu_bar = tk.Menu(self.root)
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.file_menu.add_command(label="Open", command=self.get_file_path)
-        self.file_menu.add_command(label="Load as custom rally", command=self.load_custom_rally)
-        self.file_menu.add_command(label="Export as custom rally", command=self.export_custom_rally)
+        #self.file_menu.add_command(label="Load custom rally(beta)", command=self.display_custom_rally)
+        #self.file_menu.add_command(label="Export custom rally", command=self.export_custom_rally)
         self.file_menu.add_command(label="Help/About", command=self.show_help)
         self.file_menu.add_command(label="Exit", command=self.root.quit)
 
+        self.custom_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.custom_menu.add_command(label="create new custom file", command=self.create_new_custom_file)
+        self.custom_menu.add_command(label="load existing custom file/path", command=self.load_custom_file)
+        self.custom_menu.add_command(label="write to custom file", command=self.write_to_custom_file)
+
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        self.menu_bar.add_cascade(label="Custom rally", menu=self.custom_menu)
         self.root.config(menu=self.menu_bar)
 
         # Main frame
@@ -287,51 +298,83 @@ class App:
             lines = file.readlines()
         return lines
 
-    def export_custom_rally(self):
-        # TODO
-        # check if only one country is selected
-
-        custom_rallies = self.load_custom_rally()
-        string = ""
-        #rb.eprint("exporting custom rally..", end='')
+    def display_custom_rally(self):
+        # loop somewhere i guess
+        # idk
+        self.is_custom = True # needed?
+        lines = self.load_custom_rally()
+        App.results_vector.clear()
+        self.results_listbox.delete(0, tk.END)
+        for line in lines:
+            App.selected_stages.append(line)
+            self.results_listbox.insert(tk.END, line)
+        index = 0
+        selected_idx = self.results_listbox.get(tk.ACTIVE)
+        print(selected_idx)
         try:
-            #rb.eprint("getting location..")
-            location = App.selected_stages_obj[0].location
+            index = self.results_listbox.curselection()[0]
+            print(index)
         except IndexError:
-            rb.eprint("WARNING: no stage selected")
-            messagebox.showinfo("export custom rally", "no stage selected")
+            rb.eprint("DEBUG: nothing to select")
+        if selected_idx:
+            print(selected_idx)
+            # parse the line..
+            pass
 
+    def create_new_custom_file(self):
+        default_filename = "SaveSlots.cfg"
+        self.filepath_custom_rally = os.path.join(os.getcwd(), default_filename)
+        with open(default_filename, 'w') as file:
+            pass
+
+    def load_custom_file(self):
+        self.filepath_custom_rally = filedialog.askopenfilename(title="Select a file to read and write")
+        if self.filepath_custom_rally:
+            messagebox.showinfo("File Selected", f"Selected file: '{self.filepath_custom_rally}'")
+        else:
+            messagebox.showinfo("No File Selected", "No file selected.")
+        # return?
+
+    def write_to_custom_file(self):
+        string = ""
+        if not self.filepath_custom_rally:
+            print("ERROR: no file path")
             return
-        string += f"{location.upper()}|"
-        for stage in App.selected_stages_obj:
-            string += f"{stage.stage_number}.{stage.weather},"
-        string = string[:-1]
-        string += "\r"
-        # write this to file
-        rb.eprint("writing to file..", end='')
-        #print(string)
-        count = 0
-        with open("SaveSlots.cfg", "w") as file:
-            for line in custom_rallies:
-                if line in ["\n", "\r\n"]:
-                    continue
-                file.write(line)
-                count += 1
-            if count < 10:
-                file.write(string)
-                count += 1
-                while count <= 10:
-                    file.write("\r\n")
-                    count += 1
-            else:
-                rb.eprint("error")
-                rb.eprint("WARNING: already 10 custom rallies in file")
-                # TODO: do error message here!
-                messagebox.showinfo("export custom rally", "All custom rally slots used!")
+        lines = self.load_custom_rally()
+        with open(self.filepath_custom_rally, 'w') as file:
+            try:
+                location = App.selected_stages_obj[0].location
+            except IndexError:
+                rb.eprint("WARNING: no stages selected")
+                messagebox.showinfo("export custom rally", "no stage selected")
                 return
-            rb.eprint("done")
-        #print()
-
+            string += f"{location.upper()}|"
+            for stage in App.selected_stages_obj:
+                string += f"{stage.stage_number}.{stage.weather},"
+            string = string[:-1] # removing last ","
+            string += "\r"
+            count = 0
+                # this is new file or custom file
+            if not lines:
+                print("list is empty")
+                print("writing to file..")
+                file.write(string)
+            else:
+                # write custom rallies to file and then string
+                for line in lines:
+                    if line in ["\n","\r\n"]:
+                        continue
+                    file.write(line)
+                    count += 1
+                if count < 10:
+                    file.write(string)
+                    count += 1
+                    while count <= 10:
+                        file.write("\r\n")
+                        count += 1
+                else:
+                    print("ERROR: file already full")
+                    return
 
     def update_all_stages(self):
         # left side
@@ -344,10 +387,10 @@ class App:
                 object.direction in App.selected_stages and
                 (not App.user_input_stage or App.user_input_stage in object.stage)
             ):
-
                 time = object.time.get_time()
                 string: str = f"{object.location:<9} {object.stage:<16} {object.group:<7}{object.direction:<3} {object.weather:<3} {time}"
                 # <3 :)
+                # left side
                 self.results_listbox.insert(tk.END, string)
                 self.results_vector.append(object)
             else:
