@@ -12,6 +12,12 @@ import select
 # finland         noormarku            groupa          the liftback         forward    dry       01:12.015
 # finland         lamppi               groupa          the fujin            forward    dry       02:32.515
 # ..
+#
+# input file only needs the stage time at the end 
+# this works:
+# 02:32.515
+# 01:23.236
+#
 
 # reading in times that looks like this?
 #arch :: code/pyrally/aor_times ‹testing*› » py rallydb.py -l finland -x -t -a
@@ -24,9 +30,6 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 def convert_race_time(ms: int) -> tuple[int,int,int,int]:
-    #if ms >= 356400000:
-    # need the rust Option type here..
-        #raise TypeError
     total_seconds = ms // 1000
     hours = total_seconds // 3600
     minutes = (total_seconds % 3600) // 60
@@ -80,9 +83,13 @@ def main():
         times = words[-1]
         if times == "DNF":
             continue
-        min = int(times[0:2])
-        sec = int(times[3:5])
-        ms = int(times[6::])
+        try:
+            min = int(times[0:2])
+            sec = int(times[3:5])
+            ms = int(times[6::])
+        except ValueError:
+            eprint("ERROR: no valid time in file")
+            sys.exit()
         total_min += min
         total_sec += sec
         total_ms += ms
