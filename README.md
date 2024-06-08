@@ -72,6 +72,7 @@ or use -f option
 ```
 python3 times.py -f sumofbest.txt
 ```
+you can manually edit the file, times.py only takes the last string in the file and tries to add it to a total time
 
 
 
