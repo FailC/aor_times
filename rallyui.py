@@ -4,7 +4,6 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
 # CHANGELOG
-# add file dialog for custom rally
 #
 #
 # TODO:
@@ -339,6 +338,7 @@ class App:
         string = ""
         if not self.filepath_custom_rally:
             print("ERROR: no file path")
+            messagebox.showinfo("ERROR", "no file detected, add a file path or create a new custom file")
             return
         lines = self.load_custom_rally()
         with open(self.filepath_custom_rally, 'w') as file:
@@ -359,6 +359,10 @@ class App:
                 print("list is empty")
                 print("writing to file..")
                 file.write(string)
+                count = 1
+                while count < 10:
+                    file.write("\r\n")
+                    count += 1
             else:
                 # write custom rallies to file and then string
                 for line in lines:
