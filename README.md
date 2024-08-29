@@ -8,7 +8,7 @@
 
 **The Leaderboards.txt file must be in the same working directory as the scripts**
 
-- Linux: `$HOME/.config/unity3d/Funselektor Labs/Art of Rally/cloud/Leaderboards.txt`
+- Linux: `$HOME/.config/unity3d/Funselektor Labs/art of rally/cloud/Leaderboards.txt`
 
 - macOS: `$HOME/Library/Application Support/Funselektor Labs/Art of Rally/cloud/Leaderboards.txt`
 - Windows: `C:\Users\USERNAME\AppData\LocalLow\Funselektor Labs\art of rally\cloud\Leaderboards.txt`
