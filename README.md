@@ -18,6 +18,14 @@
     find ~/ -name "Leaderboards.txt"
     ```
 
+### progress.py
+
+run the script with 
+```bash
+python3 progress.py
+```
+requires user input 
+
 ### rallydb.py
 
 show help page with all options, every argument has a short and ""--long" version
