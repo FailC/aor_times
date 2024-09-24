@@ -106,7 +106,7 @@ class Stage:
         "60s": ["the esky v1", "the meanie", "la montaine", "das 220", "das 119i", "le gorde", "la regina", "the rotary kei"],
         "70s": ["the esky v2", "il nonno 313", "the rotary 3", "la wedge", "il cavallo 803", "das 119e", "la hepta", "the pepple v1", "the pepple v2", "the zetto"],
         "80s": ["le cinq", "das whip", "turbo brick", "das uberwhip", "the cozzie sr5", "the original", "la super montaine", "la longana", "the gazelle", "das scholar"],
-        "groupb": ["the 4r6","le 502","das hammer v2","il gorilla 4s","the cozzie sr2","the cozzie sr71","the rotary b7","das hammer v3","il monster","il cavallo 882","le cinq b","das uberspeedvan", "the king of africa", "das 559", "the hyena", "das maestro", "unknown"],
+        "groupb": ["the 4r6","le 502","das hammer v2","il gorilla 4s","the cozzie sr2","the cozzie sr71","the rotary b7", "das hammer v1","das hammer v3","il monster","il cavallo 882","le cinq b","das uberspeedvan", "the king of africa", "das 559", "the hyena", "das maestro"],
         "groups": ["das eibenhammer","the rotary s7","the umibozu","il gorilla e1","le 504","il gorilla e2","das superbaus","the t22"],
         "groupa": ["il gorillona","the fujin","the liftback","the max attack","the cozzie 90","the kingpin"],
         "vans": ["das speedvan", "das hi-speedvan", "das cube van", "funselector's van"],
