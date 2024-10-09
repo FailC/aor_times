@@ -71,14 +71,12 @@ class Time:
         seconds = total_seconds % 60
         milliseconds = ms % 1000
         return (hours, minutes, seconds, milliseconds)
-    def print_time(self, hours=False):
+    def print_time(self, hours=False) -> str :
         if self.is_dnf:
-            print("DNF")
-            return
+            return "NF"
         if hours == True:
-            print(f"{self.hours}:{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}")
-            return
-        print(f"{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}")
+            return f"{self.hours}:{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}"
+        return f"{self.minutes:02d}:{self.seconds:02d}.{self.milliseconds:03d}"
 
     def get_time(self, hours=False) -> str:
         string: str = ""
@@ -218,17 +216,20 @@ def main() -> None:
         except SystemError:
             sys.exit()
 
+    output = []
+
     # getting the user provided arguments
     if args.argprint:
         defaults = parser.parse_args([])
         # I HECKING LOVE LIST COMPREHENSIONS
         user_provided_args = {k: v for k, v in vars(args).items() if vars(args)[k] != vars(defaults)[k]}
-        print(f"----------   ", end='')
+        # print(f"----------   ", end='')
+        output.append(f"----------   ")
         for arg, value in user_provided_args.items():
             if arg in ignore_user_args:
                 continue
-            print(f'{value}   ', end='')
-        print(f"----------   ")
+            output.append(f'{value}   ')
+        output.append(f"----------   \n")
 
     for stage in Stage.stage_vec:
         if (
@@ -238,20 +239,26 @@ def main() -> None:
             stage.weather in args.weather and
             (not args.stage or stage.stage in args.stage)
         ):
+            time = stage.time.print_time()
             if not args.onlytime:
                 if args.car:
-                    print(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.car_name:<20} {stage.direction:<10} {stage.weather:<10}", end='')
+                    output.append(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.car_name:<20} {stage.direction:<10} {stage.weather:<10} {time}")
                 else:
-                    print(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.direction:<10} {stage.weather:<10}", end='')
-                stage.time.print_time()
+                    output.append(f"{stage.location:<15} {stage.stage:<20} {stage.group:<15} {stage.direction:<10} {stage.weather:<10} {time}")
+                # stage.time.print_time()
+                # output.append(stage.time.print_time())
             if not stage.time.is_dnf:
                 total_time += stage.time_ms
 
     if args.totaltime:
         new = Time(total_time)
-        print(f"----------   ", end='')
-        print(new.get_time())
+        output.append(f"----------   ")
+        # print(new.get_time())
+        output.append(new.get_time())
         #new.print_time(hours=True)
+
+    for line in output:
+        print(line)
 
 
 if __name__ == "__main__":
