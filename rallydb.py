@@ -199,11 +199,18 @@ def main() -> None:
         filename = args.filename
     try:
         with open(filename, "r") as file:
-            for line in file:
+            for i, line in enumerate(file):
                 if "daily" in line or "weekly" in line:
                     debug_week_counter += 1
                     continue
-                Stage.stage_vec.append(Stage(line))
+                if "Custom" in line:
+                    continue
+                try:
+                    Stage.stage_vec.append(Stage(line))
+                except:
+                    print(f"ERROR: can't read line {i} of file {filename}:")
+                    print(line)
+                    sys.exit()
     except FileNotFoundError:
         eprint(f"ERROR:  {args.filename}  file not found")
         eprint("try: ", end='')
